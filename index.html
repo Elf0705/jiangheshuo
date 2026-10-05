@@ -1,0 +1,4348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Story Container - 2003</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #c8c8c8;
+            --accent-color: #8b0000;
+            --dim-color: #444;
+            --font-main: "MS Gothic", "SimSun", "Courier New", monospace;
+            --red: #FF0000;
+        }
+
+        .riddle-btn {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1500;
+            background: #000;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
+            padding: 10px 26px;
+            font-family: var(--font-main);
+            font-size: 1rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #222;
+            text-align: center;
+            display: none;
+        }
+        .riddle-btn.visible { display: inline-block; }
+
+        .riddle-btn:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+            box-shadow: 2px 2px 0px var(--accent-color);
+        }
+
+        .riddle-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3000;
+            background: #fff;
+            color: #111;
+            padding: 40px 44px 34px;
+            border-radius: 14px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+            width: 88%;
+            max-width: 420px;
+            display: none;
+            text-align: center;
+            font-family: "SimSun", "宋体", serif;
+        }
+        .riddle-modal.visible {
+            display: block;
+            animation: riddlePop 0.3s ease;
+        }
+
+        .riddle-modal.forced .riddle-close {
+            display: none;
+        }
+
+        @keyframes riddlePop {
+            from { opacity: 0; transform: translate(-50%, -46%) scale(0.94); }
+            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        .riddle-close {
+            position: absolute;
+            top: 8px;
+            right: 14px;
+            font-size: 1.6rem;
+            color: #999;
+            background: none;
+            border: none;
+            cursor: pointer;
+            line-height: 1;
+            font-family: inherit;
+        }
+        .riddle-close:hover { color: #000; }
+        .riddle-question {
+            font-size: 1.35rem;
+            font-weight: bold;
+            color: #000;
+            letter-spacing: 3px;
+            margin-bottom: 24px;
+        }
+        .riddle-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            outline: none;
+            background: #fafafa;
+            color: #111;
+            font-family: var(--font-main);
+            font-size: 1.1rem;
+            text-align: center;
+            letter-spacing: 2px;
+            box-sizing: border-box;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .riddle-input:focus {
+            border-color: #888;
+            background: #fff;
+        }
+        .riddle-input::placeholder { color: #bbb; }
+        .riddle-confirm {
+            margin-top: 20px;
+            background: #111;
+            color: #fff;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .riddle-confirm:hover { background: #333; }
+
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            overflow: hidden;
+            image-rendering: pixelated;
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(10, 10, 10, 0) 50%, rgba(0, 0, 0, 0.4) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.03));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.7;
+        }
+
+        .noise-overlay {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.3'/%3E%3C/svg%3E");
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 998;
+            animation: noise-anim 0.2s infinite steps(3);
+        }
+
+        @keyframes noise-anim {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            25% {
+                transform: translate(-10px, 10px);
+            }
+
+            50% {
+                transform: translate(10px, -10px);
+            }
+
+            75% {
+                transform: translate(-10px, -10px);
+            }
+
+            100% {
+                transform: translate(0, 0);
+            }
+        }
+
+        .page {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            box-sizing: border-box;
+        }
+
+        .page.active {
+            display: flex;
+        }
+
+        .title-text {
+            font-size: 3rem;
+            letter-spacing: 0.2rem;
+            margin-bottom: 4rem;
+            color: var(--text-color);
+            text-shadow: 3px 0 var(--accent-color), -2px 0 #0000ff;
+            font-weight: bold;
+            transform: scaleY(1.2);
+        }
+
+        .menu-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 220px;
+        }
+
+        .btn {
+            background: #000;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
+            padding: 15px;
+            cursor: pointer;
+            text-align: center;
+            transition: 0s;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-family: var(--font-main);
+            box-shadow: 4px 4px 0px #222;
+            position: relative;
+        }
+
+        .btn:hover {
+            background: var(--text-color);
+            color: var(--bg-color);
+            box-shadow: 2px 2px 0px var(--accent-color);
+            transform: translate(2px, 2px);
+        }
+
+        .btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: none;
+        }
+
+        #play-screen {
+            justify-content: flex-start;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        #top-nav {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 40px;
+            box-sizing: border-box;
+            background: rgba(5, 5, 5, 0.9);
+            z-index: 10;
+            border-bottom: 1px solid #222;
+            font-size: 0.8rem;
+            color: #666;
+            flex-shrink: 0;
+        }
+
+        #game-scroll-area {
+            flex: 1;
+            width: 100%;
+            overflow-y: auto;
+            padding: 20px 40px 120px 40px;
+            box-sizing: border-box;
+            scrollbar-width: none;
+        }
+
+        #game-scroll-area::-webkit-scrollbar {
+            display: none;
+        }
+
+        .text-line {
+            margin-bottom: 1.2rem;
+            line-height: 1.6;
+            animation: fadeIn 0.1s steps(3) forwards;
+            font-size: 1.1rem;
+            border-left: 3px solid transparent;
+            padding-left: 10px;
+        }
+
+        .text-line:hover {
+            border-left-color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            max-height: 80%;
+            background: #000;
+            border: 2px solid var(--text-color);
+            z-index: 2000;
+            padding: 0 20px 20px 20px;
+            display: none;
+            overflow-y: auto;
+            box-shadow: 8px 8px 0px rgba(30, 30, 30, 0.8);
+        }
+
+        .modal-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #000;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 20px 0 10px 0;
+            border-bottom: 2px dashed #333;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .slot {
+            border: 1px solid #333;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0a0a0a;
+        }
+
+        .slot:hover {
+            border-color: var(--text-color);
+            background: #111;
+        }
+
+        #choice-container {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .text-psychological {
+            font-style: italic;
+            color: #888;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            border-bottom: 1px dotted #444;
+        }
+
+        .text-violence {
+            color: #c04040;
+            text-shadow: 2px 0px 0px #000;
+            font-weight: bold;
+            font-family: "SimHei", sans-serif;
+            letter-spacing: 2px;
+            transform: skewX(-10deg);
+            display: inline-block;
+        }
+
+        .text-warm {
+            color: #ffdb99;
+            text-shadow: 0 0 2px rgba(255, 219, 153, 0.3);
+        }
+
+        .text-red {
+            color: #c04040;
+            font-weight: bold;
+        }
+
+        .input-group {
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+            width: 100%;
+        }
+
+        .input-label {
+            color: var(--text-color);
+            font-size: 1rem;
+            letter-spacing: 0.1rem;
+            text-transform: uppercase;
+        }
+
+        .pixel-input {
+            background: #000;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
+            padding: 10px;
+            font-family: var(--font-main);
+            font-size: 1.2rem;
+            outline: none;
+            width: 200px;
+            text-align: center;
+            box-shadow: inset 3px 3px 0px #222;
+        }
+
+        .pixel-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: inset 3px 3px 0px #300, 0 0 5px var(--accent-color);
+        }
+
+        .pixel-input::placeholder {
+            color: #444;
+        }
+
+        #violence-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9998;
+            pointer-events: none;
+            opacity: 0;
+            mix-blend-mode: difference;
+            background:
+                    repeating-linear-gradient(
+                            0deg,
+                            rgba(255, 0, 0, 0.35) 0px,
+                            rgba(255, 0, 0, 0.35) 2px,
+                            transparent 2px,
+                            transparent 5px
+                    ),
+                    repeating-linear-gradient(
+                            90deg,
+                            rgba(0, 0, 0, 0.25) 0px,
+                            rgba(0, 0, 0, 0.25) 3px,
+                            transparent 3px,
+                            transparent 7px
+                    );
+        }
+        #violence-overlay.active {
+            animation: violence-glitch 1.6s steps(2) 1;
+        }
+        @keyframes violence-glitch {
+            0%   { opacity: 0;    transform: translate(0, 0);       filter: invert(0) blur(0)   hue-rotate(0deg); }
+            5%   { opacity: 1;    transform: translate(-10px, 6px); filter: invert(1) blur(3px) hue-rotate(20deg); }
+            10%  { opacity: 0.4;  transform: translate(8px, -5px);  filter: invert(0) blur(6px) hue-rotate(0deg); }
+            15%  { opacity: 1;    transform: translate(-12px, -8px);filter: invert(1) blur(4px) hue-rotate(-30deg); }
+            20%  { opacity: 0.6;  transform: translate(10px, 9px);  filter: invert(0) blur(8px) hue-rotate(0deg); }
+            25%  { opacity: 1;    transform: translate(-8px, 4px);  filter: invert(1) blur(5px) hue-rotate(40deg); }
+            30%  { opacity: 0.5;  transform: translate(9px, -7px);  filter: invert(0) blur(7px) hue-rotate(0deg); }
+            35%  { opacity: 1;    transform: translate(-11px, 8px); filter: invert(1) blur(3px) hue-rotate(-20deg); }
+            40%  { opacity: 0.7;  transform: translate(7px, 6px);   filter: invert(0) blur(9px) hue-rotate(0deg); }
+            45%  { opacity: 1;    transform: translate(-9px, -6px); filter: invert(1) blur(4px) hue-rotate(30deg); }
+            50%  { opacity: 0.4;  transform: translate(11px, 9px);  filter: invert(0) blur(8px) hue-rotate(0deg); }
+            55%  { opacity: 1;    transform: translate(-10px, 5px); filter: invert(1) blur(5px) hue-rotate(-40deg); }
+            60%  { opacity: 0.6;  transform: translate(8px, -9px);  filter: invert(0) blur(6px) hue-rotate(0deg); }
+            65%  { opacity: 1;    transform: translate(-7px, 7px);  filter: invert(1) blur(4px) hue-rotate(20deg); }
+            70%  { opacity: 0.5;  transform: translate(10px, -5px); filter: invert(0) blur(8px) hue-rotate(0deg); }
+            75%  { opacity: 1;    transform: translate(-9px, 8px);  filter: invert(1) blur(6px) hue-rotate(-30deg); }
+            80%  { opacity: 0.7;  transform: translate(6px, 5px);   filter: invert(0) blur(7px) hue-rotate(0deg); }
+            85%  { opacity: 1;    transform: translate(-8px, -7px); filter: invert(1) blur(5px) hue-rotate(40deg); }
+            90%  { opacity: 0.5;  transform: translate(5px, 8px);   filter: invert(0) blur(9px) hue-rotate(0deg); }
+            95%  { opacity: 0.9;  transform: translate(-6px, 4px);  filter: invert(1) blur(4px) hue-rotate(-20deg); }
+            100% { opacity: 0;    transform: translate(0, 0);       filter: invert(0) blur(0)   hue-rotate(0deg); }
+        }
+
+        .text-ending {
+            font-family: "SimSun", "宋体", serif;
+            letter-spacing: 2px;
+        }
+
+        .countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9997;
+            background: rgba(0, 0, 0, 0.88);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: all;
+        }
+        .countdown-overlay.visible {
+            opacity: 1;
+        }
+        .countdown-box {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            padding: 40px 60px;
+            font-family: var(--font-main);
+            color: #888;
+            font-size: 1.4rem;
+            letter-spacing: 3px;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(139, 0, 0, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.8);
+            animation: countdownPulse 1s ease-in-out infinite alternate;
+        }
+        @keyframes countdownPulse {
+            from { box-shadow: 0 0 40px rgba(139, 0, 0, 0.3), inset 0 0 30px rgba(0, 0, 0, 0.8); }
+            to   { box-shadow: 0 0 80px rgba(255, 0, 0, 0.7), inset 0 0 30px rgba(0, 0, 0, 0.8); }
+        }
+        .countdown-time {
+            color: #c04040;
+            font-weight: bold;
+            text-shadow: 0 0 12px rgba(255, 0, 0, 0.8);
+        }
+        .countdown-time.tick {
+            animation: countdownTick 0.2s ease;
+        }
+        @keyframes countdownTick {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.15); color: #ff4040; }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes screen-shake {
+            0%, 100% { transform: translateX(0); }
+            10% { transform: translateX(-8px); }
+            20% { transform: translateX(8px); }
+            30% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            50% { transform: translateX(-6px); }
+            60% { transform: translateX(6px); }
+            70% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+            90% { transform: translateX(-2px); }
+        }
+        .page.screen-shake {
+            animation: screen-shake 0.9s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1;
+        }
+
+        #blood-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9996;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            overflow: hidden;
+        }
+        #blood-overlay.active {
+            opacity: 1;
+        }
+
+        .blood-splat-svg {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 220vmax;
+            height: 220vmax;
+            transform: translate3d(-50%, -50%, 0);
+            will-change: transform;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .blood-darken {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            background: radial-gradient(circle at center,
+            rgba(50, 0, 0, 0.15) 0%,
+            rgba(35, 0, 0, 0.4) 70%,
+            rgba(20, 0, 0, 0.65) 100%);
+            will-change: opacity;
+        }
+        #blood-overlay.active .blood-darken {
+            animation: bloodDarken 4s ease-out forwards;
+        }
+        @keyframes bloodDarken {
+            0%   { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .blink-triangle {
+            display: inline-block;
+            margin-left: 8px;
+            color: #888;
+            font-size: 0.75em;
+            transform: translateY(2px);
+            animation: blink-triangle 0.9s steps(2) infinite;
+            user-select: none;
+        }
+        @keyframes blink-triangle {
+            0%, 49%   { opacity: 1; }
+            50%, 100% { opacity: 0.15; }
+        }
+
+        .detail-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3100;
+            background: #0a0a0a;
+            color: #c8c8c8;
+            border: 1px solid #8b0000;
+            border-radius: 10px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85), 0 0 40px rgba(139, 0, 0, 0.4);
+            padding: 30px 36px 28px;
+            width: 88%;
+            max-width: 480px;
+            display: none;
+            font-family: "SimSun", "宋体", serif;
+            letter-spacing: 1px;
+            line-height: 1.9;
+        }
+        .detail-modal.visible {
+            display: block;
+            animation: riddlePop 0.3s ease;
+        }
+        .detail-close {
+            position: absolute;
+            top: 8px;
+            right: 14px;
+            font-size: 1.5rem;
+            color: #666;
+            background: none;
+            border: none;
+            cursor: pointer;
+            line-height: 1;
+            font-family: inherit;
+        }
+        .detail-close:hover { color: #c04040; }
+        .detail-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed #333;
+            letter-spacing: 3px;
+        }
+        .detail-body p {
+            margin: 10px 0;
+            font-size: 0.98rem;
+        }
+        .detail-label {
+            color: #8b0000;
+            font-weight: bold;
+            margin-right: 4px;
+        }
+        .detail-value { color: #c8c8c8; }
+    </style>
+</head>
+
+<button id="riddle-btn" class="riddle-btn" onclick="openRiddle()">点击展开</button>
+
+<div id="riddle-modal" class="riddle-modal">
+    <button class="riddle-close" onclick="closeRiddle()">×</button>
+    <div class="riddle-question">谁杀死了小红帽？</div>
+    <input type="text" id="riddle-input" class="riddle-input" placeholder="在此输入答案" autocomplete="off">
+    <button class="riddle-confirm" onclick="confirmRiddle()">确认答案</button>
+</div>
+
+<div id="detail-modal" class="detail-modal">
+    <button class="detail-close" onclick="closeDetail()">×</button>
+    <div class="detail-title">永不落空的猎枪</div>
+    <div class="detail-body">
+        <p><span class="detail-label">武器：</span>永不落空的猎枪</p>
+        <p><span class="detail-label">评级：</span><span class="detail-value">S</span></p>
+        <p><span class="detail-label">介绍：</span><span class="detail-value">《谁杀死了小红帽》副本完美通关必定掉落物。猎枪弹巢内仅有一发子弹，仅可锁定一位目标进行瞄准。</span></p>
+        <p><span class="detail-label">效果：</span><span class="detail-value">子弹命中后，对目标人物执行即死判定。若判定成功，则强制抹杀命中目标；若判定失败，则将目标强制驱离当前副本，驱逐状态于副本结束时解除。</span></p>
+    </div>
+</div>
+
+<body onclick="handleGlobalClick(event)">
+
+<audio id="bgm" loop preload="auto">
+    <source src="bgm.mp3" type="audio/mpeg">
+</audio>
+
+    <div class="crt-overlay"></div>
+    <div class="noise-overlay"></div>
+
+    <div id="home-page" class="page active">
+        <div class="title-text" id="game-title">Loading...</div>
+        <div class="menu-options">
+            <button class="btn" onclick="goToNameInput()">开始游戏</button>
+            <button class="btn" onclick="openModal('save-modal')">读取进度</button>
+            <button class="btn" onclick="openModal('ending-modal')">结局列表</button>
+        </div>
+    </div>
+
+    <div id="name-input-screen" class="page">
+        <div class="title-text" style="font-size: 2rem; margin-bottom: 3rem;">请输入你的代号</div>
+        <div class="input-group">
+            <span class="input-label" >请小心，神明不在此地，神明无处不在</span>
+            <input type="text" id="input-xing" class="pixel-input" placeholder="无名氏" maxlength="4">
+        </div>
+        <div class="menu-options" style="margin-top: 2rem;">
+            <button class="btn" onclick="confirmName()">确认身份</button>
+            <button class="btn" onclick="backToHome()">返回</button>
+        </div>
+    </div>
+
+    <div id="play-screen" class="page">
+        <div id="top-nav">
+            <span onclick="goToHome()" style="cursor:pointer;">[ 返回主页 ]</span>
+            <span onclick="openModal('jump-modal')" style="cursor:pointer;">[ 跳转选项 ]</span>
+            <span onclick="openModal('save-modal')" style="cursor:pointer;">[ 存档/读档 ]</span>
+        </div>
+        <div id="game-scroll-area">
+            <div id="text-container" style="width:100%;"></div>
+            <div id="choice-container"></div>
+        </div>
+    </div>
+
+    <div id="save-modal" class="modal">
+        <div class="modal-header"><span>存档记录</span><span onclick="closeModal('save-modal')">关闭</span></div>
+        <div id="save-slots"></div>
+    </div>
+
+    <div id="jump-modal" class="modal">
+        <div class="modal-header"><span>跳转选项</span><span onclick="closeModal('jump-modal')">关闭</span></div>
+        <div id="jump-list"></div>
+    </div>
+
+    <div id="ending-modal" class="modal">
+        <div class="modal-header"><span>收集的结局</span><span onclick="closeModal('ending-modal')">关闭</span></div>
+        <div id="ending-list"></div>
+    </div>
+
+    <script>
+
+        const config = {
+            title: "谁杀死了小红帽",
+            totalEndings: 24,
+            typingSpeed: 60
+        };
+
+        const storyData = {
+            "start1": {
+                lines: [
+                    "你是一名刚加入阿比斯的玩家。",
+                    "遵循着系统的指引，你前往接驳点，坐上了一辆名为“乌托比斯”的列车。",
+                    "庞大的列车撞破迷雾，车窗外的景象从一片混沌缓慢聚焦。",
+                    "“叮。”",
+                    "车门开启。",
+                    "经过一阵不算长的等待，你抵达了这个世界的第一站——",
+                    { text:"怪诞仙境。", effect: "warm" },
+                    "系统播报声响起，宣告你已经踏上了新的征程：",
+                    { type: "typing",text: "【您已到达B级副本《谁杀死了小红帽》】", effect:"red" },
+                    { text:"悬浮的荧幕中，出现一道迷题。", showRiddle: true },
+                    { type: "typing",text: "【在接下来的6小时内，成功提交正确答案即可获得返程车票，回答失败的旅客将永久滞留副本。】", effect:"red" },
+                    "你手上多了一张卡片。",
+                    { text: "1.小红帽有且只有一位；", effect: "warm" },
+                    { text: "2.只有狼会吃人；", effect: "warm" },
+                    { type: "typing",text: "这句话字与字间隔很宽，似乎藏了什么。" },
+                    { text: "3.猎枪永不落空。", effect: "warm" },
+                    { type: "typing",text: "【最后，祝您旅途愉快。】", effect:"red" },
+                    "……",
+                ],
+                next: "start2"
+            },
+
+            "start2": {
+                lines: [
+                    "你来到一处小镇。",
+                    "这座小镇弥漫着死寂的气息，凹凸不平的道路向前铺开，二十来栋矮屋舍组成它狭窄的岔口。",
+                    "你沿着道路往前，低头，发现土地上只有一串属于自己浅浅的脚印。",
+                    "而你未曾踏足的地方，干净得像是新铺设不久。",
+                    { type: "typing",text: "这条路似乎许久未有人使用过了。" },
+                    "但两旁的屋舍却用外表证明了这座小镇的古老，青苔为其铺上一层斑驳的绿衣。",
+                    "爬山虎趴在屋檐，每当风拂过，树叶便热情地抚摸屋顶的瓦片，仿佛它才是这栋屋子的主人。",
+                    "你来到一扇门前，这扇门充斥着风雨剥蚀的痕迹，似乎稍微用点力气踹上一脚，它就会立即四分五裂。",
+                    "你打算——",
+                    "……",
+                ],
+                choices: [
+                    { text: "敲门", target: "start_knock" },
+                    { text: "强闯", target: "start_bandit" },
+                ],
+            },
+
+            "start_bandit": {
+                lines: [
+                    "屋内的女孩错愕地看着你。",
+                    "你注意到，对方戴着一顶红帽子。",
+                    { type: "typing",text: "看来她就是故事中的小红帽了。" },
+                    "你正要解释自己的行为，下一刻，红帽女孩毫不客气地将你请了出去。",
+                    "你自然不甘心毫无收获，所以你——",
+                    "……",
+                ],
+                choices: [
+                    { text: "尝试与女孩交涉", target: "start_bandit_1" },
+                    { text: "转身离去", target: "start_rule1" },
+                    { text: "杀死女孩", target: "start_bandit_2", effect: "red" },
+                ],
+            },
+
+            "start_bandit_1": {
+                lines: [
+                    "女孩抓起墙角的扫帚，强硬地将你赶了出去。",
+                    "……",
+                ],
+                next: "start_rule1",
+                noDivider: true,
+            },
+
+            "start_bandit_2": {
+                lines: [
+                    "你恶从心头起，扑了上去狠狠掐住了女孩的脖子。",
+                    "她在你的手底下不断挣扎，发出幼兽濒死般的呜咽，但显然，这并没有唤醒你的良知。",
+                    "一条年轻的生命在你手中逐渐失去温度。",
+                    "你将尸体留在原地，若无其事地在屋内翻箱倒柜，试图寻找有用的线索。",
+                    "一阵忙碌过后，你一无所获。",
+                    "……",
+                ],
+                next: "start_rule1",
+                noDivider: true,
+            },
+
+            "start_rule1": {
+                lines: [
+                    "走出房屋，你发现所有屋舍的门皆已悄然敞开。",
+                    "无数鲜红的身影自门内走出，宛如幽灵一般，汇聚成一条静默无声的血河，朝你席卷而来。",
+                    { text: "不多时，你被这条血河彻底淹没。", effect: "blood" },
+                ],
+                next: "rule1",
+                noDivider: true,
+            },
+
+            "rule1": {
+                lines: [
+                    "已解锁隐藏规则：",
+                    { type: "typing", text: "破坏房屋者，死。", effect:"red", blackScreen: true },
+                ],
+                next: "ending_rule1",
+            },
+
+            "ending_rule1": {
+                lines: [
+                    "“它讨厌修缮房屋，所以干脆在规则中一劳永逸。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 1,
+                endingName: "隐藏规则1"
+            },
+
+            "start_knock": {
+                lines: [
+                    "一个女孩打开门，你的视线落在它鲜艳的红帽子上。",
+                    { type: "typing",text: "看来她就是故事中的小红帽了。" },
+                    "接下来，你尝试——",
+                    "……",
+                ],
+                choices: [
+                    { text: "与女孩交谈", target: "start_knock_talk" },
+                    { text: "转身离开", target: "start3" },
+                    { text: "杀死女孩", target: "start_knock_kill", effect: "red" },
+                ],
+            },
+
+            "start_knock_kill": {
+                lines: [
+                    "你恶从心头起，扑了上去狠狠掐住了女孩的脖子。",
+                    "她在你的手底下不断挣扎，发出幼兽濒死般的呜咽，但显然，这并没有唤醒你的良知。",
+                    "一条年轻的生命在你手中逐渐失去温度。",
+                    "……",
+                    { text: "你掐死了“小红帽”。", effect:"warm", item: "尸体" },
+                    "要提交答案吗？",
+                ],
+                choices: [
+                    {
+                        text: "是",
+                        forceRiddle: true,
+                        riddleKey: "{xing}",
+                        riddleThen: { yes: "yourself", no: "yourself" }
+                    },
+                    { text: "否", target: "start_no" },
+                ],
+                noDivider: true,
+            },
+
+            "start_no": {
+                lines: [
+                    "或许还有其他的可能？",
+                    "你将尸体留在原地，若无其事地在屋内翻箱倒柜，试图寻找有用的线索。",
+                    "一阵忙碌过后，你一无所获。",
+                    "……",
+                ],
+                next: "start3",
+                noDivider: true,
+            },
+
+            "start_knock_talk": {
+                lines: [
+                    "你主动上前，经过一番交谈后，你成功凭借丰富的阅历博得了女孩的好感。",
+                    "你也因此获悉到她的名字：",
+                    { text: "克洛。" , effect:"warm" },
+                    "克洛邀请你参与“新朋友的游戏”，你决定——",
+                    "……",
+                ],
+                choices: [
+                    { text: "答应她", target: "start_accept" },
+                    { text: "拒绝她", target: "start_refuse" },
+                ],
+                noDivider: true,
+            },
+
+            "start_refuse": {
+                lines: [
+                    { text: "为什么要拒绝呢？", effect:"red" },
+                    "克洛态度大变，将你请离了这里。",
+                    "……",
+                ],
+                next: "start3",
+                noDivider: true,
+            },
+
+            "start_accept": {
+                lines: [
+                    { text: "“你知道什么而言对我们最珍贵吗？”" , effect:"warm" },
+                    "克洛笑着问你。",
+                    "她不认为你能够给出令人满意的回答，于是，短暂的停顿后，克洛主动揭晓了答案——",
+                    { text: "“是名字。”" , effect:"warm" },
+                    "“名字是分辨彼此的唯一标准，因此，对我们而言，想要和谁成为朋友，就必须先获知对方的姓名。”",
+                    "“‘我们’是谁？”你适时问道。",
+                    "“‘我们’就是我们。如果你想要了解我们，就请先和<span class='text-red'>六个</span>人成为朋友吧。——噢，我也算一个。”",
+                    "克洛走到房门边，室外的阳光溺进她湖泊般澄明的蓝宝石眼瞳中，她朝你露出一个毫无阴霾的笑。",
+                    { type: "typing",text: "漂亮，明媚，却死气沉沉，像一段预设好的影像。" },
+                    { text: "“你可以在任意一栋房子里找到‘我们’，”" , effect:"warm" },
+                    { text: "“我们每个人身上都藏有一件绣着自身名字的物品，你有11次机会向我们索要任意一件物品，以此寻找我们的名字。”" , effect:"warm" },
+                    { text: "“找到五个名字后，就算你通过了’好朋友的游戏’。”" , effect:"warm" },
+                    { text: "“届时，你再来寻我，我有一件见面礼送给你。”" , effect:"warm" },
+                    "……",
+                ],
+                next: "start_friend_1"
+            },
+
+            "start_friend_1": {
+                lines: [
+                    "你来到另一栋房前，敲门，一个与克洛长相相似的红帽子小姑娘闯入你的视野。",
+                    "她挎着一个果篮，果篮处挂着一只白手套，另一只则戴在她的左手上。",
+                    { text: "“你是来和我成为朋友的吗？”" , effect:"warm" },
+                    "小姑娘眼中闪烁着期待的光。",
+                    "“是的。”你说道。",
+                    "你观察片刻，决定向她索要——",
+                ],
+                choices: [
+                    { text: "红兜帽", friendChoice: true },
+                    { text: "左手套", friendChoice: true },
+                    { text: "右手套", friendChoice: true },
+                    { text: "果篮中的餐布", friendChoice: true },
+                ],
+                noDivider: true,
+            },
+
+            "start_faulty": {
+                lines: [
+                    "小姑娘将它递给你。",
+                    "接过后，你仔仔细细将它检查了一遍，很遗憾，上面并没有名字。",
+                    "你再次向她索要——",
+                ],
+                choices: [
+                    { text: "红兜帽", friendChoice: true },
+                    { text: "左手套", friendChoice: true },
+                    { text: "右手套", friendChoice: true },
+                    { text: "果篮中的餐布", friendChoice: true },
+                ],
+                noDivider: true,
+            },
+
+            "start_right": {
+                lines: [
+                    "小姑娘将它递给你。",
+                    "接过后，你仔仔细细将它检查了一遍，幸运的是，你上面正好绣着一个名字。",
+                    "恭喜，你结识了新的朋友：",
+                    { text: "{friendName}", effect: "warm" },
+                    "……",
+                ],
+                next: "start_next_friend",
+                noDivider: true,
+            },
+
+            "start_friend_2": {
+                lines: [
+                    "敲开第三栋房。",
+                    "宛如一套流水线的红帽子角色出现在眼前。",
+                    "你熟练地向她索要——",
+                ],
+                choices: [
+                    { text: "红兜帽", friendChoice: true },
+                    { text: "左手套", friendChoice: true },
+                    { text: "右手套", friendChoice: true },
+                    { text: "果篮中的餐布", friendChoice: true },
+                ],
+                noDivider: true,
+            },
+
+            "start_friend_3": {
+                lines: [
+                    "敲开第四栋房。",
+                    "你向红帽子女孩索要——",
+                ],
+                choices: [
+                    { text: "红兜帽", friendChoice: true },
+                    { text: "左手套", friendChoice: true },
+                    { text: "右手套", friendChoice: true },
+                    { text: "果篮中的餐布", friendChoice: true },
+                ],
+                noDivider: true,
+            },
+
+            "start_friend_4": {
+                lines: [
+                    "敲开第五栋房。",
+                    "你向红帽子女孩索要——",
+                ],
+                choices: [
+                    { text: "红兜帽", friendChoice: true },
+                    { text: "左手套", friendChoice: true },
+                    { text: "右手套", friendChoice: true },
+                    { text: "果篮中的餐布", friendChoice: true },
+                ],
+                noDivider: true,
+            },
+
+            "start_friend_5": {
+                lines: [
+                    "敲开第六栋房。",
+                    "你向红帽子女孩索要——",
+                ],
+                choices: [
+                    { text: "红兜帽", friendChoice: true },
+                    { text: "左手套", friendChoice: true },
+                    { text: "右手套", friendChoice: true },
+                    { text: "果篮中的餐布", friendChoice: true },
+                ],
+                noDivider: true,
+            },
+
+            "start_success": {
+                lines: [
+                    "你成功获得了六段崭新的友谊，带着她们的名字，你回到克洛的房子前。",
+                    { text: "“恭喜你，通过了‘新朋友的游戏’。”" , effect:"warm" },
+                    "克洛笑着说，她从果篮中取出一只空酒瓶，抬手将其狠狠摔向地面。",
+                    "随着一道清脆的破裂声响起，酒瓶瞬间四分五裂。",
+                    "紧接着，她附身拾起其中一块碎碴，平静地抵上自己的脖颈。",
+                    { type: "typing", text: "“嗤——”", effect:"blood" },
+                    "尖锐的棱刺进她的皮肉。",
+                    "暗红色的液体从豁口中渗出，流过克洛的手腕，没入她鲜红的袖口。",
+                    "酒瓶碎片顺势而下，轻而易举地划破衣物、剖开皮囊。",
+                    "“很高兴认识你，{xing}——我们的新朋友。”",
+                    "克洛脸上扔挂着灿烂的笑容，她从腹腔中取出一柄沾着暗红色液体的斧头，将其递给了给你。",
+                    { type: "typing", text: "你获得了道具——斧头。", effect: "red", item: "斧头" },
+                    "……",
+                ],
+                next: "start3"
+            },
+
+            "start_failure": {
+                lines: [
+                    "新朋友的数量并没有达到克洛的要求，你来到她的房前，企图蒙混过关。",
+                    "“抱歉，看来你与见面礼无缘了。”克洛坚定地拒绝了你。",
+                    "你——",
+                    "……",
+                ],
+                choices: [
+                    { text: "跪下来求她", target: "start_beg" },
+                    { text: "采取暴力手段", target: "start_violence" },
+                    { text: "乖乖离开", target: "start_3" },
+                ],
+            },
+
+            "start_beg": {
+                lines: [
+                    "你“噗通”一声跪倒在克洛面前，结结实实给她磕了个响头。",
+                    { text: "“求求你了，算我通过吧！我没有功劳也有苦劳啊！”" , effect:"warm" },
+                    "你眼巴巴盯着克洛，死皮赖脸地哀求道。",
+                    "“我真的很需要那份见面礼……”",
+                    { type: "typing",text: "尽管你并不知道那份见面礼是什么。" },
+                    "“我们难道不是好朋友吗？”你试图用并不深厚的友谊道德绑架她。",
+                    "“我和你是朋友，但你和我们并不是，对不起，我不能将东西擅自交给你。”克洛冷漠地拒绝。",
+                    "你还想说什么，但克洛用一把扫帚将你戳了出去，“砰”地甩上了房门。",
+                    "你碰了一鼻子灰。",
+                    "……",
+                ],
+                next: "start3"
+            },
+
+            "start_violence": {
+                lines: [
+                    "“不想死的话就把东西给我！”",
+                    { text: "你猛地扑到克洛身前，狠狠掐住了她的喉咙。", effect:"red" },
+                    "“呃……”",
+                    "克洛发出难受的呜咽，胡乱地挥舞四肢，试图挣脱你的桎梏。",
+                    "但你的力气比她大得多，更别提克洛起初没有防备，令你抢占了先机。",
+                    "“我们不是朋友吗？”你无师自通绑匪的角色，恶劣地威胁道：“我不想杀了你，前提是，你乖乖把东西交出来。”",
+                    "你稍微松了一点力道，确保克洛能够说出话来。",
+                    "“你是一个不称职的朋友！”克洛涨红着脸。",
+                    "下一刻，她用仅剩的力气猛击你的腹部，你一时吃痛，克洛趁机挣脱了束缚。",
+                    "你缓过神，想要故技重施。",
+                    "却见克洛从果篮中取出一只空酒瓶，用力掷在地上。",
+                    "酒瓶登时四分五裂，她迅速捡起其中一块碎片，抵上自己的脖子。",
+                    { type: "typing",text: "“撕拉——”", effect:"violence" },
+                    "伴随着一道毛骨悚然的撕裂声，一具开肠破肚的尸体站在你面前。",
+                    { text: "克洛从腹腔中取出一柄斧头，狠狠抡向了你！", effect:"red" },
+                    { type: "typing",text: "“噗。”", effect:"violence" },
+                    { text: "鲜血模糊你的视野。", effect: "blood" },
+                    "……",
+                ],
+                next: "ending_bad friend"
+            },
+
+            "ending_bad friend": {
+                lines: [
+                    "“我们难道不是朋友吗？”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 2,
+                endingName: "不称职的朋友"
+            },
+
+            "start3": {
+                lines: [
+                    { text: "你毫无头绪地在小镇中游荡，寻找着有助于解谜的线索。", countdown: true },
+                    { type: "typing",text: "随着副本倒计时跳转到3：00：00整，小镇中发生了一些奇怪的变化。" , effect:"warm" },
+                    "原本紧闭的房门悄然敞开，一道又一道鲜红的身影自门内走出，宛如幽灵一般，汇聚成一条静默无声的血河，朝一个方向流动。",
+                    "她们皆提着一只果篮，依稀能够看见酒瓶似的轮廓将餐布顶起一角。",
+                    "面对此番情景，你的反应是——",
+                    "……",
+                ],
+                choices: [
+                    { text: "战斗爽！", target: "start_combat", requireNoAxe: true },
+                    { text: "战斗爽！", target: "start_combat_true", requireAxe: true },
+                    { text: "躲起来", target: "start_hiding&rest" },
+                ],
+            },
+
+            "start_combat": {
+                lines: [
+                    "你冲了上去。",
+                    "你施展拳脚。",
+                    "你占据上风。",
+                    "你被一斧头砍死了。",
+                    "……",
+                ],
+                next: "ending_bare hands"
+            },
+
+            "ending_bare hands": {
+                lines: [
+                    "“手无寸铁的你淹没在斧头的交际舞中。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 3,
+                endingName: "空手接白刃"
+            },
+
+            "start_combat_true": {
+                lines: [
+                    "小红帽们并未群起而攻之，似乎只有你选中的猎物，才会与你展开殊死一搏。",
+                    "你杀死了三位小红帽，体力在缠斗中逐渐下滑。",
+                    "接下来，你打算——",
+                    "……",
+                ],
+                choices: [
+                    { text: "继续战斗爽", target: "start_resume combat" },
+                    { text: "休息片刻", target: "start_hiding&rest" },
+                ],
+            },
+
+            "start_resume combat": {
+                lines: [
+                    "你杀红了眼，肌肉支配了你的大脑。",
+                    "斧头砍断骨头的手感令你着迷。",
+                    "很快，在这场无休止的战斗中，一柄不知从何而来的斧头击中了你的腰部。",
+                    "虚弱感后知后觉涌上来。",
+                    { text: "渐嚣的疼痛中，你陷入了永眠。", effect: "blood" },
+                    "……",
+                ],
+                next: "ending_assist"
+            },
+
+            "ending_assist": {
+                lines: [
+                    "“你帮助敌人拿下了自己的人头。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 4,
+                endingName: "助攻"
+            },
+
+            "start_hiding&rest": {
+                lines: [
+                    { text: "你闯进一栋空房屋，将门反锁。", ifAxe: "你闯进一栋空房屋，将门反锁后，坐在原地进行修整。" },
+                    { text: "红色幽灵们似乎对你并无恶意，她们流入蜿蜒的小径，消失了。", ifAxe: "等你休息完毕，再度打开门时，那群红色幽灵已经消失了，只留下被你杀死的三具尸体。" },
+                    "一个戴着红帽子的小姑娘姗姗来迟。",
+                    "她瞧见在门口探头探脑的你，主动走了过来，诚恳地拜托你帮她获取葡萄酒和蛋糕。",
+                    "面对这一请求，你开口——",
+                    "……",
+                ],
+                choices: [
+                    { text: "答应她", target: "start_approve" },
+                    { text: "拒绝她", target: "start_reject" },
+                ],
+            },
+
+            "start_approve": {
+                lines: [
+                    "你们交换了彼此的姓名。",
+                    "“我叫做{xing}。”",
+                    "“‘<span class='text-warm'>小红帽</span>’，你可以这样称呼我。”",
+                    "“你没有名字吗？”",
+                    "“小红帽”不解地捏了捏头顶的帽子，“我的名字就是‘小红帽’呀！”",
+                    "你心中一动。",
+                    { type: "typing",text: "“小红帽”。" },
+                    { type: "typing",text: "一个没有姓名之人。" },
+                    { type: "typing",text: "一个区别于其他居民的……" },
+                    { type: "typing",text: "将死之人。", effect:"red" },
+                    "你意识到她才是副本叙述中的真正的“小红帽”。",
+                    { type: "typing",text: "或许跟着她就能找到迷题的答案？" },
+                    { text: "想通了其中的关键后，你铆足了劲在小镇中寻找“小红帽”所求之物。", ifAxe: "想通了其中的关键后，你正打算铆足劲寻找“小红帽”所求之物。" },
+                    { text: "很可惜，你始终没有找到葡萄酒和蛋糕。", effect:"red", requireNoAxe: true },
+                    { text: "不知何时，“小红帽”已经抛下你独自离开。", requireNoAxe: true },
+                    { text: "便听见“小红帽”故作惊讶地问你：“门口的葡萄酒和蛋糕是你的吗？”", requireAxe: true },
+                    { text: "什么葡萄酒和蛋糕？", requireAxe: true },
+                    { type: "typing",text: "你不明所以。", requireAxe: true },
+                    { text: "你看见“小红帽”来到被你杀死的三具尸体前，抽出斧头随意一挥，尸体轻松人首分离。", requireAxe: true },
+                    { text: "她伸出食指，蘸了蘸断口流出的血液，放在唇边轻轻一舔，不咸不淡地评价道：", requireAxe: true },
+                    { text: "“还算新鲜。”", requireAxe: true },
+                    { text: "！", effect:"red", screenShake: true, requireAxe: true },
+                    { text: "你大骇。", requireAxe: true },
+                    { text: "下一刻，“小红帽”劈开了掉在一旁的头颅，用斧身挖出一大块白花花的脑浆，塞进了果篮中。", requireAxe: true },
+                    { text: "见你呆呆站在原地，“小红帽”抓起一颗脑袋，热情地塞进你怀里。", requireAxe: true },
+                    { text: "“蛋糕正好有多余的，如果你想吃的话，这块给你。”", effect:"warm", requireAxe: true },
+                    { text: "她好心地提起斧头轻轻一划，一颗死不瞑目的头颅瞬间在你手中一分为二。", requireAxe: true },
+                    { text: "你捧着它，似乎还能感受到斧刃擦着手掌劈下的冰冷触感。", requireAxe: true },
+                    { text: "“为什么不尝尝呢？”", effect:"red", requireAxe: true },
+                    { text: "“小红帽”直勾勾地盯着你，浑身鲜红的颜色，衬得她像是沐血归来的妖魔，正恶趣味地逼迫你享用同类的血肉。", requireAxe: true },
+                    { text: "你打了个寒颤，准备——", requireAxe: true },
+                    "……",
+                ],
+                choices: [
+                    { text: "享用“蛋糕”", target: "start_enjoy the cake", requireAxe: true },
+                    { text: "拒绝“蛋糕”", target: "start_refuse the cake", requireAxe: true },
+                ],
+                next: "start_woof",
+            },
+
+            "start_enjoy the cake": {
+                lines: [
+                    "你捧起那颗被劈成两半的头颅，闭着眼咬了一口。",
+                    "甜的？",
+                    "你惊讶地睁开眼，不确定地从颅壁中又刮出一块出来，仔细尝了尝。",
+                    "——还真是奶油。",
+                    "在你品尝蛋糕的间隙，“小红帽”回到尸体旁，从提篮中拿起一只空酒瓶，拔出木塞，精准地抽出脖颈断面中掩藏的动脉，将其塞进瓶口。",
+                    "暗红的液体顺着柔韧的管道流出，很快填满了整只酒瓶。",
+                    "收好葡萄酒和蛋糕，“小红帽”向你发出邀请：",
+                    { text: "“你要和我一起去拜访外婆吗？”" , effect:"warm" },
+                    "你的答案是——",
+                    "……",
+                ],
+                choices: [
+                    { text: "可以", target: "start_woof_true" },
+                    { text: "不行", target: "start_woof" },
+                ],
+            },
+
+            "start_refuse the cake": {
+                lines: [
+                    "你摇了摇头，将头颅还了回去。",
+                    "“小红帽”耸耸肩，没有强求。",
+                    "你有些惊讶。",
+                    { type: "typing",text: "看来“小红帽”还挺好说话的？" },
+                    "你看着“小红帽”回到尸体旁，从提篮中拿起一只空酒瓶，拔出木塞，精准地抽出脖颈断面中掩藏的动脉，将其塞进瓶口。",
+                    "暗红的液体顺着柔韧的管道流出，很快填满了整只酒瓶。",
+                    "收好葡萄酒和蛋糕，小红帽向你发出邀请：",
+                    { text: "“你要和我一起去拜访外婆吗？”" , effect:"warm" },
+                    "你的答案是——",
+                    "……",
+                ],
+                choices: [
+                    { text: "可以", target: "start_woof_true" },
+                    { text: "不行", target: "start_woof" },
+                ],
+            },
+
+            "start_approve_corpse": {
+                lines: [
+                    "你们交换了彼此的姓名。",
+                    "“我叫做{xing}。”",
+                    "“‘小红帽’，你可以这样称呼我。”",
+                    "“你没有名字吗？”",
+                    "“小红帽”不解地捏了捏头顶的帽子，“我的名字就是‘小红帽’呀！”",
+                    "你心中一动。",
+                    { type: "typing", text: "“小红帽”。" },
+                    { type: "typing", text: "一个没有姓名之人。" },
+                    { type: "typing", text: "一个区别于其他居民的……" },
+                    { type: "typing",text: "将死之人。", effect:"red" },
+                    "你意识到她才是副本叙述中的真正的“小红帽”。",
+                    { type: "typing", text: "或许跟着她就能找到迷题的答案？" },
+                    "想通了其中的关键后，你铆足了劲在小镇中寻找“小红帽”所求之物。",
+                    "很可惜，你始终没有找到葡萄酒和蛋糕。",
+                    "就在这时，你忽然想起了那具被你藏起来的尸体。",
+                    "不过，这应该与小红帽所求之物无关。",
+                    "思忖片刻，你决定——",
+                    "……",
+                ],
+                choices: [
+                    { text: "将尸体交给小红帽", target: "start_approve_corpse_give" },
+                    { text: "当做无事发生", target: "start_approve_corpse_ignore" },
+                ],
+            },
+
+            "start_approve_corpse_give": {
+                lines: [
+                    { text: "“噢，{xing}，感谢你送来的葡萄酒和蛋糕。”", effect: "warm" },
+                    "“小红帽”惊喜地说。",
+                    "她抽出斧头随意一挥，地上的尸体轻松人首分离。",
+                    "她伸出食指，蘸了蘸断口流出的血液，放在唇边轻轻一舔，不咸不淡地评价道：",
+                    "“还算新鲜。”",
+                    { text: "！", effect: "warm", screenShake: true },
+                    "你大骇。",
+                    "下一刻，“小红帽”劈开了掉在一旁的头颅，用斧身挖出一大块白花花的脑浆，塞进了果篮中。",
+                    "接着，她又拿起一只空酒瓶，拔出木塞，精准地抽出脖颈断面中掩藏的动脉，将其塞入瓶中。",
+                    "暗红的液体顺着柔韧的管道流出，很快填满了整只酒瓶。",
+                    "见你呆呆站在原地，“小红帽”收起“葡萄酒”，遗憾地摇了摇头：",
+                    "“可惜量太少了，难以同你分享它们的美味了。”",
+                    "一切准备就绪，“小红帽”向你发出邀请：",
+                    { text: "“你要和我一起去拜访外婆吗？”", effect: "warm" },
+                    "你的答案是——",
+                    "……",
+                ],
+                choices: [
+                    { text: "可以", target: "start_woof_true" },
+                    { text: "不行", target: "start_woof" },
+                ],
+            },
+
+            "start_approve_corpse_ignore": {
+                lines: [
+                    "时间在徒劳无功的寻找中流失。",
+                    "不知何时，“小红帽”已经抛下你独自离开。",
+                    "你只好顺着居民们离开的方向，踏上小径，开始寻找“小红帽”的身影。",
+                    "……",
+                ],
+                next: "start_woof",
+            },
+
+            "start_reject": {
+                lines: [
+                    "“好吧。”小姑娘遗憾地看着你。",
+                    { type: "typing",text: "你总感觉这道目光中掺杂了其他情绪，导致原本的“遗憾”之意悄然变味。" },
+                    "她干脆利落地离开了。",
+                    "……",
+                ],
+                next: "start_woof"
+            },
+
+            "start_woof": {
+                lines: [
+                    "你顺着红幽灵们离开的方向，踏上小径。",
+                    "行至半途，你远远地望见一座庞然大物占据主干道。",
+                    "数道身影横七竖八地倒在它的四周，喷溅的暗红液体和她们的斗篷融为一体，共同为大地拉起一片猩红帷幕。",
+                    "你踩着这片帷幕，走近舞台中央。",
+                    "怪物缓缓转过了身，它拥有如小山一般巍峨的身躯、深灰色的皮毛，",
+                    "人头大的金黄眼瞳居高临下俯视着你，尖锐的瞳仁宛如一只磨利的茅，仿佛下一刻就能毫不费力将你刺穿。",
+                    "你遇见了——",
+                    { text: "“狼”。", effect:"violence" },
+                    "它挡在你的必经之路上，想要继续探索，就必须穿过它，或者从花丛绕路而行。",
+                    "你选择——",
+                    "……",
+                ],
+                choices: [
+                    { text: "正面作战", target: "fighting", requireAxe: true },
+                    { text: "正面作战", target: "gutser", requireNoAxe: true, escalateTarget: "Solomon", escalateKey: "gutser_done" },
+                    { text: "从花丛绕路", target: "start_flowers_true", requireAxe: true, flowerChoice: true,
+                        hover: "也许，这次会有所不同？", hoverCondition: () => flowerState.count >= 1 },
+                    { text: "从花丛绕路", target: "start_flowers_faulse", requireNoAxe: true, flowerChoice: true,
+                        hover: "也许，这次会有所不同？", hoverCondition: () => flowerState.count >= 1 },
+                    { text: "放弃深入", target: "abandonment" },
+                ],
+            },
+
+            "fighting": {
+                lines: [
+                    "你挥舞着手中的斧头，朝狼冲了过去。",
+                    "狼弯下腰，屈指轻轻一弾。",
+                    "你毫无抵抗之力飞了出去，“哇”地吐出一大口血。",
+                    "狼静静地看着你。",
+                    { text: "你死了。", effect: "blood" },
+                    "死于体内大出血。",
+                    "……",
+                ],
+                next: "ending_fighting"
+            },
+
+            "ending_fighting": {
+                lines: [
+                    "“或许它也没想到，你是一颗一碰即碎的残次品。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 5,
+                endingName: "弹珠"
+            },
+
+            "gutser": {
+                lines: [
+                    "你赤手空拳地冲了上去。",
+                    "狼低下头，静静注视着在它毛发中“仰泳”的你，竖起两根指头，小心翼翼把你拎了起来。",
+                    "你挥舞着双拳与狼隔空作战。",
+                    "经过不懈的努力后，终于，你的衣服再也承受不住你的重量——",
+                    { type: "typing",text: "“刺啦！”", effect:"red" },
+                    "你骤然从高空坠落！",
+                    "紧接着，",
+                    { text: "你被摔死了。", effect: "blood" },
+                    "……",
+                ],
+                next: "ending_gutser",
+            },
+
+            "ending_gutser": {
+                lines: [
+                    "“不用担心，你的味道很美味，所以狼为你收了尸，不会有人知道你是摔死的。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 6,
+                endingName: "以身饲狼"
+            },
+
+            "Solomon": {
+                lines: [
+                    "在你赤手空拳冲上去之前，一道不知从何而来的灵光洗涤了你的大脑。",
+                    "你茅塞顿开，顿时有了新的主意。",
+                    { type: "typing",text: "——在战斗之前，你需要寻找一把趁手的武器。" , effect:"warm" },
+                    "你的目光在地面上来回扫视，很快从尸堆中找到一柄完好的斧头。",
+                    "紧接着，你悄然靠近将其捡起，找准时机猛地朝狼发动偷袭！",
+                    "怪物的皮毛被你劈开，斧刃嵌进了狼的体内。",
+                    { text: "得手了！" , effect:"warm" },
+                    "你欣喜若狂。",
+                    "然而，当你使出吃奶的力气再度发力，这柄斧头却纹丝不动、难以寸进。",
+                    "狼抖了抖脚，斧头被毫不费力被抖落下来。",
+                    "下一刻，一道巨大的阴影将你覆盖——",
+                    "你面前的庞然大物抬起了脚。",
+                    { text: "你被踩死了。", effect: "blood" },
+                    "……",
+                ],
+                next: "ending_Solomon"
+            },
+
+            "ending_Solomon": {
+                lines: [
+                    "“你比之前更聪明，所以，你是大聪明！”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 7,
+                endingName: "聪明人"
+            },
+
+            "start_woof_true_flowers_true": {
+                lines: [
+                    "你告别“小红帽”，义无反顾地踏入花丛。",
+                    "……",
+                ],
+                next: "start_flowers_true"
+            },
+
+            "start_flowers_true": {
+                lines: [
+                    "人高的野花包围了你，它们的根茎如钢铁一般坚硬，斜插在必经之路上，阻挠你的脚步。",
+                    "它们的花瓣上像一条条舌头，其表面遍布密集的倒刺，在你经过时刮下层层皮肉，令你浑身鲜血淋漓。",
+                    "它们的花蕊宛如昆虫的口器，粘稠的透明液体不断从花柱中分泌，液体通过伤口被身体吸收，你对疼痛的感知逐渐被麻痹。",
+                    "你双手紧握斧头，朝身侧大力一挥，斧刃撞上花茎，发出清脆的锵鸣。",
+                    "你再度挥动斧头，花茎应声而断。",
+                    { text: "就这样，你凭借自己和手中的斧头，在花丛中硬生生杀出一条活路。", ifGun: "高耸的野花组成青纱帐遮蔽你的视线，你不记得自己走过哪里，仅凭借大致印象绕路而行。" },
+                    { text: "你走出花丛，来到了一座木屋前。", ifGun: "在又一次砍倒一堆野花时，好运眷顾了你。" },
+                    { requireGun: true, text: "你在花丛中发现了一柄猎枪。" },
+                    { requireGun: true, text: "你拾取了道具——猎枪。",effect:"red" },
+                    { requireGun: true, text: "……" },
+                    { requireGun: true, text: "凭借着斧头，你艰难地在这一片青纱帐中杀出一条血路。" },
+                    { requireGun: true, text: "终于，携带着斧头与猎枪，你走出了花丛。" },
+                ],
+                next: "start4",
+                noDivider: true,
+            },
+
+            "start_woof_true_flowers_faulse": {
+                lines: [
+                    "你告别“小红帽”，义无反顾地踏入花丛。",
+                    "……",
+                ],
+                next: "start_flowers_faulse"
+            },
+
+            "start_flowers_faulse": {
+                lines: [
+                    "人高的野花包围了你，它们的根茎如钢铁一般坚硬，斜插在必经之路上，阻挠你的脚步。",
+                    "它们的花瓣上像一条条舌头，其表面遍布密集的倒刺，在你经过时刮下层层皮肉，令你浑身鲜血淋漓。",
+                    "它们的花蕊宛如昆虫的口器，粘稠的透明液体不断从花柱中分泌，液体通过伤口被身体吸收，你对疼痛的感知逐渐被麻痹。",
+                    "抱着即将成功的信念，你在花丛愈发深入。",
+                    "前进，前进，继续前进。",
+                    "机械性的行走中，你渐渐忘记了自己为何要前行。",
+                    "你的动作慢下来。",
+                    "越来越慢。",
+                    "直至静立不动。",
+                    "……",
+                    "一具血肉模糊的的骨架立在花丛中，被鲜花簇拥着，染上了浓郁的芬芳。",
+                    "在某一时刻，这具骷髅轰然倒下，义无反顾地投身大地，成为了黑土的一部分。",
+                    "……",
+                    { text: "意识的最后一秒，你依稀看见，花朵们人性化地抖动起花萼，似乎在齐齐欢笑。", effect: "blood" },
+                    "……",
+                ],
+                next: "ending_flowers",
+                noDivider: true,
+            },
+
+            "ending_flowers": {
+                lines: [
+                    "“你为鲜花献出了自己的生命。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 8,
+                endingName: "爱花人士"
+            },
+
+            "start_flowers_faulse_3": {
+                lines: [
+                    "人高的野花包围了你，它们的根茎如钢铁一般坚硬，斜插在必经之路上，阻挠你的脚步。",
+                    "它们的花瓣上像一条条舌头，其表面遍布密集的倒刺，在你经过时刮下层层皮肉，令你浑身鲜血淋漓。",
+                    "它们的花蕊宛如昆虫的口器，粘稠的透明液体不断从花柱中分泌，液体通过伤口被身体吸收，你对疼痛的感知逐渐被麻痹。",
+                    "抱着即将成功的信念，你在花丛愈发深入。",
+                    "前进，前进，继续前进。",
+                    "你的意识逐渐模糊，四肢也开始变得绵软无力。",
+                    "但你依旧在坚定不移地前行。",
+                    "“啪嗒”。",
+                    "你似乎撞到了什么，但不重要了。",
+                    "因为你已经看不清了。",
+                    { text: "渐渐地，你永远失去了看清它的机会。", effect: "blood" },
+                ],
+                next: "start_lodge",
+                noDivider: true,
+            },
+
+            "start_flowers_faulse_5": {
+                lines: [
+                    "人高的野花包围了你，它们的根茎如钢铁一般坚硬，斜插在必经之路上，阻挠你的脚步。",
+                    "它们的花瓣上像一条条舌头，其表面遍布密集的倒刺，在你经过时刮下层层皮肉，令你浑身鲜血淋漓。",
+                    "它们的花蕊宛如昆虫的口器，粘稠的透明液体不断从花柱中分泌，液体通过伤口被身体吸收，你对疼痛的感知逐渐被麻痹。",
+                    "抱着即将成功的信念，你在花丛愈发深入。",
+                    "前进，前进，继续前进。",
+                    "你仿佛在什么时候经受过这种折磨，获得了相应的抗性，因此，你的意志力还在顽强地支配着你的身体。",
+                    "“啪嗒。”",
+                    "你似乎撞到了什么。",
+                    "你用血肉模糊的手拨开花丛，发现了一柄猎枪。",
+                    { text: "你拾取了道具——猎枪。", effect:"red",item: "猎枪" },
+                    "接下来，你打算——",
+                    "……",
+                ],
+                choices: [
+                    { text: "原路返回", target: "start_flowers_faulse_5_return" },
+                    { text: "继续前行", target: "start_flowers_faulse_5_continue" },
+                ],
+                noDivider: true,
+            },
+
+            "start_flowers_faulse_5_return": {
+                lines: [
+                    "你依照原路返回。",
+                    "鲜血是你的路引，因此，你的脚步比来时更快速。",
+                    "在彻底沦为化肥之前，你走出了青纱帐。",
+                    "现在，手握猎枪，你拥有了新的选择——",
+                    "……",
+                ],
+                choices: [
+                    { text: "开枪，射杀巨狼", effect:"red",target: "start_flowers_5_shoot" },
+                ],
+            },
+
+            "start_flowers_5_shoot": {
+                lines: [
+                    "你颤颤巍巍地举枪瞄准。",
+                    "狼眼中闪烁着惊恐的光，它庞大的身躯动了起来，竟是在转身逃跑！",
+                    { text: "——“砰！”", effect:"blood", screenShake: true },
+                    "巨大的轰鸣声碾过耳膜。",
+                    "子弹正中巨狼的后背，它的身体上出现一个恐怖的血洞。",
+                    { type: "typing",text: "猎枪永不落空。" , effect:"warm" },
+                    "恭喜。",
+                    { text: "你杀死了“狼”。", effect:"red" },
+                    "自此刻起，此路于你，畅通无阻。",
+                    "……",
+                ],
+                next: "start_lodge"
+            },
+
+            "start_flowers_faulse_5_continue": {
+                lines: [
+                    "你的动作慢下来。",
+                    "越来越慢。",
+                    "直至静立不动。",
+                    { text: "意识的最后一秒，你依稀看见，花朵们人性化地抖动起花萼，似乎在齐齐欢笑。", effect: "blood" },
+                    "……",
+                ],
+                next: "ending_flowers"
+            },
+
+            "abandonment": {
+                lines: [
+                    "你原路返回，开始执着地在小镇中徘徊。",
+                    { text: "副本倒计时一分一秒地减少，你的任务始终毫无进展。", countdown: true, countdownFormat: "short" },
+                    { type: "typing",text: "倒计时归零，你必须要作出回答了。" , effect:"warm" },
+                    "……",
+                ],
+                choices: [
+                    { text: "回答", forceRiddle: true }
+                ],
+            },
+
+            "abandonment_true": {
+                lines: [
+                    "你告别小红帽，沿原路返回，开始执着地在小镇中徘徊。",
+                    { text: "副本倒计时一分一秒地减少，你的任务始终毫无进展。", countdown: true, countdownFormat: "short" },
+                    { type: "typing",text: "倒计时归零，你必须要作出回答了。" , effect:"warm" },
+                    "……",
+                ],
+                choices: [
+                    { text: "回答", forceRiddle: true }
+                ],
+            },
+
+            "start_woof_true": {
+                lines: [
+                    "你同“小红帽”一起踏上小径。",
+                    "行至半途，你远远地望见一座庞然大物占据主干道。",
+                    "数道身影横七竖八地倒在它的四周，喷溅的暗红液体和她们的斗篷融为一体，共同为大地拉起一片猩红帷幕。",
+                    "你们踩着这片帷幕，走近舞台中央。",
+                    "怪物缓缓转过了身，它拥有如小山一般巍峨的身躯、深灰色的皮毛，",
+                    "人头大的金黄眼瞳居高临下俯视着你，尖锐的瞳仁宛如一只磨利的茅，仿佛下一刻就能毫不费力将你刺穿。",
+                    "你遇见了——",
+                    { text: "“狼”。", effect:"violence" },
+                    "它挡在你的必经之路上，想要继续探索，就必须穿过它，或者从花丛绕路而行。",
+                    "你选择——",
+                    "……",
+                ],
+                choices: [
+                    { text: "正面作战", target: "fighting", requireAxe: true },
+                    { text: "正面作战", target: "gutser_other", requireNoAxe: true },
+                    { text: "从花丛绕路", target: "start_woof_true_flowers_true", requireAxe: true, flowerChoice: true,
+                        hover: "也许，这次会有所不同？", hoverCondition: () => flowerState.count >= 1 },
+                    { text: "从花丛绕路", target: "start_woof_true_flowers_faulse", requireNoAxe: true, flowerChoice: true,
+                        hover: "也许，这次会有所不同？", hoverCondition: () => flowerState.count >= 1 },
+                    { text: "放弃深入", target: "abandonment_true" },
+                    { text: "寻求“小红帽”的帮助", target: "start_boss" },
+                ],
+            },
+
+            "gutser_other": {
+                lines: [
+                    "你赤手空拳地冲了上去。",
+                    "狼低下头，静静注视着在它毛发中“仰泳”的你，竖起两根指头，小心翼翼把你拎了起来。",
+                    "你挥舞着双拳与狼隔空作战。",
+                    "经过不懈的努力后，终于，你的衣服再也承受不住你的重量——",
+                    { type: "typing", text: "“刺啦！”", effect: "violence" },
+                    "你骤然从高空坠落！",
+                    "紧接着，",
+                    { text: "你被摔死了。", effect: "blood" },
+                    "……",
+                ],
+                next: "ending_gutser_other",
+            },
+
+            "ending_gutser_other": {
+                lines: [
+                    "“不用担心，你的味道很美味，所以狼为你收了尸。除了“小红帽”，不会有人知道你是摔死的。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 6,
+                endingName: "以身饲狼"
+            },
+
+            "start_boss": {
+                lines: [
+                    "面对这头狰狞的怪物，你默默后退一步，将“小红帽”护至身前。",
+                    "巨狼亮出利爪。",
+                    "“小红帽”从果篮中取出一柄锃亮的斧头。",
+                    "狼爪擦过斧刃，迸出一串短促的火星。",
+                    "两道身形差距悬殊的身影轰然相撞——",
+                    { text: "一场以“暴力”为名的剧目，就此拉开序幕！" , effect:"warm" },
+                    "每一次扑袭，巨狼长而粗的毛发便如鳞甲般紧贴其身，跳跃之间，大地都在它脚下战栗。",
+                    "“小红帽”穿梭于山倾般的威势中，宛如一只翩跹的蝶。",
+                    "刀光闪烁，与她共舞。",
+                    "狼爪划开空气，势不可挡朝她压来。",
+                    "“小红帽”凌驾于风波之上，她轻巧地转身，红斗篷在视野中留下一道难以捕捉的残影。",
+                    "下一刻，她已然出现在狼人身后。",
+                    "双手握住斧头，甩向颈后一侧蓄力，身体后仰，好似张开的弓——",
+                    { type: "typing",text: "“唰！”", effect:"red" },
+                    "破空声与一道弧形银月同时出现。",
+                    "一颗温热的、还在滴血的狼头重重砸了下来。",
+                    "泥土与碎石溅起，成为宣告剧目结束的礼花。",
+                    { text: "“小红帽”杀死了“狼”。", effect:"red" },
+                    "……",
+                    "你跟在“小红帽”身后，经过巨狼的尸体。",
+                    "一张卡片从你的口袋中掉落。",
+                    { type: "typing",text: "更准确来说，是它主动钻了出来。" },
+                    "狼的血液浸湿了卡片。",
+                    {
+                        type: "typing",
+                        text: "真正的“狼”能够杀死小红帽，但前提是",
+                        effect: "red",
+                        glitchTrigger: "前提是",
+                        glitchGarble: "%$#^>L%)(*&^%@$#@",
+                        glitchFinal: "真正的“狼”能够杀死小红帽，",
+                        glitchFinalEffect: "red"
+                    },
+                    "……",
+                    "你俯身拾起卡片。",
+                    "无意间，你用余光瞥见：",
+                    "这匹狼的头顶竟少了一对狼耳！",
+                    "……",
+                ],
+                next: "start4"
+            },
+
+            "start4_好大的胆子竟然不跟小红帽同行，害得我多写几行代码你罪该万死": {
+                lines: [
+                    "木屋前，那位戴红帽的小姑娘与你再次相遇。",
+                    "她在门前踟蹰不前，见你到来，“小红帽”主动走上前，开口倾诉自己的烦恼。",
+                     "“外婆有时很奇怪，总喜欢盯着我流口水，这令我感到十分害怕。”",
+                    { type: "typing", text: "说到“害怕”时，她皱了皱眉。" },
+                    "接着，她声音提高些许，似乎要强调什么：",
+                    "“但，我<span class='text-red'>爱</span>我的外婆。因此我必须要给她送上葡萄酒和蛋糕。”",
+                    "“每当吃下它们，外婆的症状总会好转许多。”",
+                    { text:"“可我害怕与她接触——所以，我能拜托你帮忙把葡萄酒和蛋糕送给外婆吗？”", effect: "warm" },
+                    "“小红帽”期待地看着你。",
+                    "你选择——",
+                    "……",
+                ],
+                choices: [
+                    { text: "答应", target: "start_yes" },
+                    { text: "拒绝", target: "答应" },
+                ],
+                noDivider: true,
+            },
+
+            "答应": {
+                lines: [
+                    { text: "“你不会想拒绝的吧？”", effect: "red" },
+                    "小姑娘双手提着果篮，微微低着头，透过帽沿小心翼翼觑看你，一副弱小无助的模样。",
+                    "你选择——",
+                    "……",
+                ],
+                choices: [
+                    { text: "答应", target: "start_yes" },
+                    { text: "答应", target: "start_yes" },
+                ],
+                noDivider: true,
+            },
+
+            "start_yes": {
+                lines: [
+                    "“太好了！”",
+                    "“小红帽”开心地扬起笑脸，她先把果篮里的斧头取了出来，然后将整个篮子递给你。",
+                    "“那这件事就拜托你了。”",
+                    "餐布掀开一角，你看见了其中暗红的酒液，以及完全糊成一坨、卖相差得可以比拟排泄物的浅褐色蛋糕。",
+                    "……",
+                ],
+                next: "start5",
+                noDivider: true,
+            },
+
+            "start4": {
+                lines: [
+                    "你与“小红帽”来到一栋木屋前。",
+                    "你正要往里探，却见“小红帽”踟蹰不前。",
+                    "你——",
+                    "……",
+                ],
+                choices: [
+                    { text: "主动询问“小红帽”的想法", target: "start4_ask" },
+                    { text: "无视“小红帽”的情绪", target: "start4_ignore" },
+                ],
+            },
+
+            "start4_ask": {
+                lines: [
+                    { text: "“怎么了？”" , effect:"warm" },
+                    "你贴心地询问。",
+                    "“小红帽”似乎正等着你的提问，她不假思索地说出了自己的顾虑：",
+                ],
+                next: "start4_common",
+                noDivider: true,
+            },
+
+            "start4_ignore": {
+                lines: [
+                    "你与“小红帽”大眼瞪小眼。",
+                    "仿佛在进行“谁先开口谁就输”的游戏。",
+                    "终于，你的犟脾气赢得了比赛。",
+                    "“小红帽”主动开口打破僵持的氛围：",
+                    "……",
+                ],
+                next: "start4_common",
+                noDivider: true,
+            },
+
+            "start4_common": {
+                lines: [
+                    "“外婆有时很奇怪，总喜欢盯着我流口水，这令我感到十分害怕。”",
+                    { type: "typing", text: "说到“害怕”时，她皱了皱眉。" },
+                    "“但，我<span class='text-red'>爱</span>我的外婆。因此我必须要给她送上葡萄酒和蛋糕。”",
+                    { type: "typing", text: "她的声音提高些许，似乎要强调什么。" },
+                    "“每当吃下它们，外婆的症状总会好转许多。”",
+                    { text: "“可我害怕与她接触——所以，我能拜托你帮忙把葡萄酒和蛋糕送给外婆吗？”", effect: "warm" },
+                    "“小红帽”期待地看着你。",
+                    "你选择——",
+                    "……",
+                ],
+                choices: [
+                    { text: "答应", target: "start_yes" },
+                    { text: "拒绝", target: "答应" },
+                ],
+                noDivider: true,
+            },
+
+            "start5": {
+                lines: [
+                    "你进入木屋，看见一个穿着皮的骷髅躺在床上，它的肚子高高隆起，像是怀孕一般。",
+                    { text: "“小红帽，我的小红帽，走近来，让我瞧瞧。”", effect: "warm" },
+                    "嘶哑的嗓音如同山谷间的穿堂风，阴冷、森然，令你不禁打了个寒颤。",
+                    "你挎着果篮走近。",
+                    "这具骷髅才渐渐在你眼中有了形貌。",
+                    "这是眼睛、这是鼻子、这是嘴……",
+                    "噢！还有一对狼耳倒立着，包裹着它的脑袋，充当了头发的角色。",
+                    "狼耳太大了，与骷髅的体型完全不符。",
+                    "搭在它地脑袋上，反而显得滑稽可笑。",
+                    "这时，狼外婆用两颗裸露的眼球瞪着你，恶狠狠地说道：",
+                    { text: "“你不是我的小红帽。”", effect: "red" },
+                    "“所以，你要和我玩一个游戏——啊，小红帽和我最爱玩的游戏。”",
+                    "你打算——",
+                    "……",
+                ],
+                choices: [
+                    { text: "欣然接受", target: "start_game_accept" },
+                    { text: "严肃拒绝", target: "start_game_refuse" },
+                    { text: "转身离去", target: "start_leave" },
+                ],
+            },
+
+            "start_game_accept": {
+                lines: [
+                    { text: "“在1-20的范围内，存在一个‘炸弹’数字。接下来，我们轮流各报一个数字，每一次报数后，我都会告诉你炸弹数字在哪一个区间。”", effect: "warm" },
+                    { text: "“直到我们之间一人喊出‘炸弹’数字，游戏就结束了。”", effect: "warm" },
+                    "“结束游戏的人……呵呵……”狼外婆发出两声古怪的笑，随后咽了咽口水：",
+                    "“要接受<span class='text-red'>惩罚</span>。”",
+                    "“那‘炸弹’该如何确定？”你问道。",
+                    "“自然是我定了。”狼外婆理所应当地说道。",
+                    { type: "typing", text: "也就是说，你在和一个知道答案的人玩猜答案的游戏？" },
+                    "你：“……”",
+                ],
+                choices: [
+                    { text: "去你的！恕不奉陪！", target: "start_game_refuse" },
+                    { text: "吃下这个哑巴亏", target: "start_game_play" },
+                    { text: "再问问", target: "start_game_ask" },
+                ],
+            },
+
+            "start_game_ask": {
+                lines: [
+                    "“谁是先手？”",
+                    "“你。”",
+                    "“这个游戏还有其他规则吗？”",
+                    "“我每一次都会报一个离‘炸弹’数字最接近的数字。”",
+                    "你忽然意识到了转机之处：",
+                    "只要开局喊的不是炸弹数字，或它的临近数，那么你第二轮就能够立即锁定炸弹数字。",
+                    { type: "typing", text: "譬如，当你喊出10，狼外婆喊出5，已知对方只会喊出离“炸弹”最接近的数字，那么炸弹数字必然是4或6。而炸弹在5-10区间，可以直接确定炸弹数是6。" },
+                    { type: "typing", text: "如果你倒霉一点，恰好喊到了7，那么再次轮到你时，5-7之间就只剩下炸弹6，你必输无疑。" },
+                    "知晓所有游戏规则后，你信心大增。",
+                    { text: "优势在我！", effect: "warm" },
+                ],
+                next: "start_game_play",
+            },
+
+            "start_game_play": {
+                lines: [],
+                numberGame: true,
+            },
+
+            "start_win": {
+                lines: [
+                    "你赢了。",
+                    "狼外婆用垂涎的眼神将你浑身上下舔了一遍，良久后，才不情不愿地开口：",
+                    "“放下葡萄酒和蛋糕吧，凑近些，我有一件东西交给你。”",
+                    "你警惕地走到床前。",
+                    "狼外婆撕下了头顶的耳朵，将它递给你。",
+                    { text: "你获得了道具——狼耳。", item: "狼耳" },
+                    "……",
+                ],
+                next: "start6",
+            },
+
+            "start_lose": {
+                lines: [
+                    "你输了。",
+                    "狼外婆的身形骤然膨胀，深灰色的毛发自体内涌出，头颅不断拉长形变，尖锐的狼爪刺破皮肤疯长而出。",
+                    "面对这场突如其来的变故，你——",
+                ],
+                choices: [
+                    { text: "逃", target: "start_lose_flee" },
+                    { text: "战斗", target: "start_lose_fight" },
+                ],
+            },
+
+            "start_lose_flee": {
+                lines: [
+                    "你头也不回地夺门而出。",
+                    "“小红帽”听见动静，正要询问你委托完成情况，却瞥见你手中完好无损的果篮，立即变了脸色。",
+                    "“你……”",
+                    { type: "typing", text: "“小红帽”刚说出一个字，你已经连滚带爬地跑出二里地。" },
+                    "当你自以为跑得足够远，身后没了动静已经彻底安全时，这才放缓脚步停了下来，扶着树气喘吁吁。",
+                    "你回头张望。",
+                    "身后寂寥无人，只有自己逃亡时留下的痕迹。",
+                    "你放下心，回正视线——",
+                    { text: "“啊！”", effect: "red", screenShake: true },
+                    "一张脸突兀地在眼前放大！",
+                    { text: "“你怎么能就这样跑掉呢？”", effect: "violence" },
+                    "“小红帽”尾音俏皮地扬起，冲淡了质问的严肃，使得它很像玩笑话。",
+                    "但你知道，此刻自己绝不能将它当做玩笑。",
+                    "你——",
+                    "……",
+                ],
+                choices: [
+                    { text: "道歉", target: "start_lose_apologize" },
+                    { text: "抢先一步杀死自己", target: "start_lose_suicide", requireAxeOrGun: true },
+                    { text: "开枪", target: "start_lose_shoot", requireGun: true },
+                    { text: "用斧头和“小红帽”搬搬手腕", target: "start_lose_armwrestle", requireAxe: true },
+                ],
+            },
+
+            "start_lose_apologize": {
+                lines: [
+                    "“对不起，我错了。”",
+                    "你深深地向“小红帽”鞠了一个躬，开始检讨自己的错误：",
+                    "“我不应该扔下你就跑，下次我一定会带上你的！”",
+                    { text: "“我不喜欢下次。”", effect: "red" },
+                    "“小红帽”友善地拿起了斧头——",
+                    "“所以，我来扮演外婆，你现在开始跑吧！”",
+                    "“如果能跑过我的话，我就原谅你哦。”",
+                    "她朝你露出一个甜甜的笑。",
+                    { text: "你：！", effect: "shake" },
+                    "眼见斧头就要落在身上，你原本打颤的双腿忽然注入一股力量。",
+                    "你挥动双臂，拼尽全力地奔跑，速度甚至比上一次逃亡更快。",
+                    "“其实被我追上也不会发生什么呢，毕竟我是一个<span class='text-red'>善良</span>的‘小红帽’，根本做不到伤害朋友的事。”",
+                    "那道令你恐惧的声音如影随形。",
+                    "“可是，你不仅没有完成我的委托，还丢下我擅自逃跑，这些行为令我很难过。”",
+                    "“作为朋友，你有责任让我重新高兴起来，不是吗？”",
+                    "“因此，我们来玩一个游戏吧。和外婆的游戏不同，我的游戏很简单。”",
+                    "“只要你能躲过三次我的斧头，就算你赢，怎么样？”",
+                    "“至于输的代价……应该不用我额外说明了吧？”",
+                    "一柄斧头从身后回旋飞来。",
+                    "你——",
+                ],
+                choices: [
+                    { text: "向左闪避！", target: "start_dodge2", timeout: 1000, timeoutTarget: "start_motty" },
+                ],
+                noDivider: true,
+            },
+
+            "start_dodge2": {
+                lines: [
+                    "“咻”，斧头擦着你的脖颈飞掠而过。",
+                    "“小红帽”再次掷出斧头。",
+                    "你——",
+                ],
+                choices: [
+                    { text: "蹲下！", target: "start_dodge3", timeout: 600, timeoutTarget: "start_motty" },
+                ],
+                noDivider: true,
+            },
+
+            "start_dodge3": {
+                lines: [
+                    "你头顶一凉，几十根头发丝从眼前滑落。",
+                ],
+                choices: [
+                    { text: "扑倒！", target: "start_dodge_success", timeout: 400, timeoutTarget: "start_motty" },
+                ],
+                noDivider: true,
+            },
+
+            "start_dodge_success": {
+                lines: [
+                    { text: "“砰！”", effect: "shake" },
+                    "斧头几乎贴着你的脸，竖着砸在地面上。",
+                    "如果你没有及时做出反应的话，它估计就要落在你的脑袋上了。",
+                    { text: "恭喜，你成功通过了“小红帽”的游戏。", effect: "warm" },
+                    "一只手握住斧柄，将斧头提起。",
+                    "你劫后余生地站起身，发现“小红帽”已经不见了。",
+                    "而副本探索时间已经所剩无几。",
+                ],
+                next: "start_final_question",
+                noDivider: true,
+            },
+
+            "start_motty": {
+                lines: [
+                    { text: "“咔嚓。”", effect: "blood" },
+                    "身上似乎有骨头裂开了。",
+                    "你摸了摸头。",
+                    "啊，原来是你的脑袋被劈成了两半。",
+                    "……",
+                ],
+                next: "ending_motty",
+            },
+
+            "ending_motty": {
+                lines: [
+                    "“你的死亡并非毫无意义，至少，你让‘小红帽’发现了她在投掷武器上的天赋。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 9,
+                endingName: "天赋挖掘者",
+            },
+
+            "start_lose_suicide": {
+                lines: [
+                    { text: "只要先自杀，就没有人能够杀死我！", effect: "warm" },
+                    "抱着这样的信念，你拿起了——",
+                    "……",
+                ],
+                choices: [
+                    { text: "斧头", target: "start_suicide_axe", requireAxe: true },
+                    { text: "猎枪", target: "start_suicide_gun", requireGun: true },
+                ],
+                noDivider: true,
+            },
+
+            "start_suicide_axe": {
+                lines: [
+                    { type: "typing", text: "“噗嗤。”", effect: "red" },
+                    "你死了。",
+                    "死于自杀。",
+                    "……",
+                ],
+                next: "ending_special",
+            },
+
+            "start_suicide_gun": {
+                lines: [
+                    { text: "“砰！”", effect: "blood", screenShake: true },
+                    "你死了。",
+                    "死于自杀。",
+                    "……",
+                ],
+                next: "ending_special",
+            },
+
+            "ending_special": {
+                lines: [
+                    "“生活鞭挞你，你说：好爽，主人再来一次。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 10,
+                endingName: "特殊爱好者",
+            },
+
+            "start_lose_shoot": {
+                lines: [
+                    "“小红帽”也没料到你如此性情。",
+                    "你举枪瞄准时，她下意识后退一步，只一步，就拉开了半米远。",
+                    "但最终，她什么也没做，只是站在原地，等待你开枪。",
+                    { text: "“砰！”", effect: "blood", screenShake: true },
+                    "你按下扳机，子弹从枪膛中轰出。",
+                    "“我讨厌你。”“小红帽”说，她脸上没有面对死亡的恐惧，只是微微撇下嘴，一副很不高兴的样子。",
+                    "子弹命中了她的胸口，创口很小，因此她并不会立即失去行动力。",
+                    "“小红帽”将周遭扫视一圈，目光落在一颗高耸的松树上。",
+                    "你顺着她的视线往上看去，刹那间，那道鲜红的身影竟已落在了绿荫层叠的树冠之中。",
+                    "她坐在树桠的一端，头抵着树干，轻轻闭上眼。",
+                    "暖洋洋的阳光穿透枝叶，落在她的身上。",
+                    "林中传来清脆的鸟鸣。",
+                    "微风轻柔地抚过她的脸庞。",
+                    "你仰头注视着这一幕。",
+                    "注视着森林安葬它地孩子。",
+                    "……",
+                    { text: "你杀死了——“小红帽”。", effect: "red" },
+                    "是否提交答案？",
+                    "……",
+                ],
+                choices: [
+                    { text: "是", forceRiddle: true, riddleKey: "{xing}", riddleThen: { yes: "yourself_true", no: "yourself_true" } },
+                    { text: "否", target: "start_final_question" },
+                ],
+            },
+
+            "start_lose_armwrestle": {
+                lines: [
+                    "你举起斧头朝小红帽冲了过去。",
+                    "你的斧头脱手飞出。",
+                    { text: "“咚。”", effect: "blood" },
+                    "你发现，飞出的不仅是自己的斧头。",
+                    "还有脖子上的装饰品。",
+                    "……",
+                ],
+                next: "ending_armwrestle",
+            },
+
+            "ending_armwrestle": {
+                lines: [
+                    "“你的斧头不堪一击，你也是。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 11,
+                endingName: "班门弄斧",
+            },
+
+            "start_lose_fight": {
+                lines: [],
+                dynamicNext: function () {
+                    const a = hasAxe();
+                    const g = hasGun();
+                    if (a && g) return "start_lose_fight_both";
+                    if (a) return "start_lose_fight_axe_only";
+                    if (g) return "start_lose_fight_gun_only";
+                    return "start_lose_fight_bare";
+                },
+            },
+
+            "start_lose_fight_axe_only": {
+                lines: [
+                    "你举起手中始终没有放下过的斧头，在狼外婆扑袭而至时奋力抵抗。",
+                    "“噗嗤。”",
+                    "斧头切开了狼外婆的狼吻。",
+                    "——但也仅此而已了。",
+                    "它的利爪划破你的脖子，你喉间一阵腥甜，止不住地开始咳嗽。",
+                    { type: "typing", text: "“咳咳……”", effect: "red" },
+                    "你的并没有受折磨太久。",
+                    "狼外婆拔下斧头，将你一口一口吞吃入腹。",
+                    "……",
+                ],
+                next: "ending_egg",
+            },
+
+            "ending_egg": {
+                lines: [
+                    "“作为一个刚加入阿比斯的新人，你未免太过高估自己的实力了。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 12,
+                endingName: "以卵击石",
+            },
+
+            "start_lose_fight_both": {
+                lines: [
+                    "面对远胜于你的敌人，你只有一次机会决定使用哪柄武器。",
+                    "你选择——",
+                    "……",
+                ],
+                choices: [
+                    { text: "斧头", target: "start_lose_fight_both_axe" },
+                    { text: "猎枪", target: "start_lose_fight_both_gun" },
+                ],
+            },
+
+            "start_lose_fight_both_axe": {
+                lines: [
+                    "你举起手中始终没有放下过的斧头，在狼外婆扑袭而至时奋力抵抗。",
+                    "“噗嗤。”",
+                    "斧头切开了狼外婆的狼吻。",
+                    "——但也仅此而已了。",
+                    "它的利爪划破你的脖子，你喉间一阵腥甜，止不住地开始咳嗽。",
+                    { type: "typing", text: "“咳咳……”", effect: "red" },
+                    "你的并没有受折磨太久。",
+                    "狼外婆拔下斧头，将你一口一口吞吃入腹。",
+                    "……",
+                ],
+                next: "ending_selfsave",
+                noDivider: true,
+            },
+
+            "ending_selfsave": {
+                lines: [
+                    "“你代替童话故事中的‘小红帽’成为了狼外婆的食物，但这一次，显然没有猎人来拯救你。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 13,
+                endingName: "何不自救？",
+            },
+
+            "start_lose_fight_both_gun": {
+                lines: [
+                    "“砰！”",
+                    "子弹从枪膛中轰出。",
+                    "带着焦痕的碎肉迸溅而出，狼外婆的脑袋炸开了花。",
+                    { text: "你杀死了“狼外婆”。", effect: "red" },
+                    { text: "你获得了道具——“狼耳”。", item: "狼耳" },
+                    "……",
+                ],
+                next: "start6",
+            },
+
+            "start_lose_fight_gun_only": {
+                lines: [
+                    "你身上唯一的武器只有猎枪。",
+                    "你要开枪吗？",
+                    "……",
+                ],
+                choices: [
+                    { text: "是", target: "start_lose_fight_gun_yes" },
+                    { text: "否", target: "start_lose_fight_gun_no" },
+                ],
+            },
+
+            "start_lose_fight_gun_yes": {
+                lines: [
+                    { text: "“砰！”", effect: "blood", screenShake: true },
+                    "子弹从枪膛中轰出。",
+                    "带着焦痕的碎肉迸溅而出，狼外婆的脑袋炸开了花。",
+                    { text: "你杀死了“狼外婆”。", effect: "red" },
+                    { text: "你获得了道具——“狼耳”。", item: "狼耳" },
+                    "……",
+                ],
+                next: "start6",
+            },
+
+            "start_lose_fight_gun_no": {
+                lines: [
+                    "你把枪当做长矛，试图格挡狼外婆的獠牙。",
+                    { type: "typing", text: "“咔嚓。”", effect: "red" },
+                    "枪身被咬断了。",
+                    "你的脑袋也是。",
+                    "……",
+                ],
+                next: "ending_clown",
+            },
+
+            "start_lose_fight_bare": {
+                lines: [
+                    "你身上没有任何与狼外婆抗衡的资本。",
+                    "它的獠牙轻而易举的咬断了你的骨头。",
+                    { type: "typing", text: "“咔嚓。”", effect: "blood" },
+                    "你死了。",
+                    "……",
+                ],
+                next: "ending_clown",
+            },
+
+            "ending_clown": {
+                lines: [
+                    "“你应该为自己自豪，毕竟，如何愚蠢地死去也是一种天赋。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 14,
+                endingName: "小丑",
+            },
+
+            "start_final_question": {
+                lines: [],
+                finalQuestion: true,
+            },
+
+            "start_game_refuse": {
+                lines: [
+                    { text: "狼外婆的身形骤然膨胀，深灰色的毛发自体内涌出，头颅不断拉长形变，尖锐的狼爪刺破皮肤疯长而出。", effect: "violence" },
+                    "面对这场突如其来的变故，你——",
+                    "……",
+                ],
+                choices: [
+                    { text: "逃", target: "start_lose_flee" },
+                    { text: "战斗", target: "start_lose_fight" },
+                ],
+            },
+
+            "start_leave": {
+                lines: [
+                    "小红帽看着原封不动的葡萄酒和蛋糕，失望地接了过来。",
+                    { text: "“你没有资格成为我的朋友，所以，那个秘密也无法与你分享了。”" , effect:"warm" },
+                    "她只身进入木屋，合上了门，彻底隔绝你的视线。",
+                    "当你房门再次打开时，“小红帽”已经不见踪影。",
+                    "只有狼外婆躺在那张小床上，闭着眼，似乎陷入了睡眠。",
+                    "而副本探索时间已经所剩无几。",
+                ],
+                next: "start_final_question",
+                noDivider: true,
+            },
+
+            "start6": {
+                lines: [
+                    { text: "副本倒计时15：00。", countdown: true, countdownFormat: "start6" },
+                    "小红帽还活着。",
+                    "看到空空如也的果篮，小红帽很高兴，她告诉了你一个秘密：",
+                    { text: "辨认一只狼最好的办法，就是看它是否拥有狼耳。", effect: "warm" },
+                    "她看向你手上拿着那对狼耳，楚楚可怜地问：",
+                    { text: "“你要吃了我吗？”", effect: "red" },
+                ],
+                choices: [
+                    { text: "吃掉小红帽", target: "start6_eat" },
+                    { text: "放过小红帽", target: "start6_spare" },
+                ],
+            },
+
+            "start6_eat": {
+                lines: [
+                    "“你真的要吃了我啊？”",
+                    "小红帽瞬间变脸，一斧头将你劈死了。",
+                    "……",
+                ],
+                next: "rule2",
+            },
+
+            "rule2": {
+                lines: [
+                    "已解锁隐藏规则：",
+                    { type: "typing", text: "真正的‘狼’能够杀死小红帽，但前提是：你比小红帽更强。", effect:"red", blackScreen: true },
+                    "……",
+                ],
+                next: "ending_rule2",
+                noDivider: true,
+            },
+
+            "ending_rule2": {
+                lines: [
+                    "“如果你的玩家综合评级超过了副本评级，也许可以试试这种通关方式。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 23,
+                endingName: "隐藏规则2",
+            },
+
+            "start6_spare": {
+                lines: [
+                    "“为什么不吃我呢？”",
+                    "小红帽试图再度引诱你做出选择。",
+                    "她将斧头藏在身后，用左手手背抵住自己的额头，一副虚弱到要晕倒的模样。",
+                    "她说道：“噢，我是如此弱小又可怜，根本没有任何反抗之力。”",
+                    "你：",
+                ],
+                choices: [
+                    { text: "“……”", target: "start6_silent" },
+                    { text: "“哦天呐，小红帽大人，您是如此的弱小啊！”", target: "start6_mock" },
+                    { text: "“我不想用脑袋和你的斧头比比谁更硬。”", target: "start6_dispute" },
+                    { text: "开枪射杀“小红帽”！", target: "start6_shoot", requireGun: true, effect: "red" },
+                ],
+            },
+
+            "start6_silent": {
+                lines: [
+                    "你的沉默让小红帽玩心大起。",
+                    "“不会有人来的，包括猎人。”",
+                    "“猎人很早以前就失踪了。你只要带上狼耳朵，我就只能引颈自戮，乖乖地成为你的肚中餐。”",
+                    "小红帽黯然神伤。",
+                    "你：",
+                ],
+                choices: [
+                    { text: "“……”", target: "start6_silent_more" },
+                    { text: "吃了她", target: "start6_silent_eat" },
+                    { text: "跪地求饶", target: "start6_beg" },
+                ],
+                noDivider: true,
+            },
+
+            "start6_silent_more": {
+                lines: [
+                    "你的木讷令小红帽兴致全无。",
+                    "……",
+                ],
+                next: "start6_end",
+                noDivider: true,
+            },
+
+            "start6_silent_eat": {
+                lines: [
+                    "你意有所动，带上狼耳朵，一口将她吞吃入腹。",
+                    "但你还未食指大动，便已脑洞大开。",
+                    "小红帽甩了甩斧头上的血，转身离开。",
+                    "留下你被整整齐齐劈成两半的尸体。",
+                    "……",
+                ],
+                next: "ending_gourmet",
+            },
+
+            "ending_gourmet": {
+                lines: [
+                    "“唯有美食不可辜负。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 24,
+                endingName: "小馋猫",
+            },
+
+            "start6_beg": {
+                lines: [
+                    "“我不想吃你，放过我吧。”",
+                    "你噗通一声跪在地上，请求小红帽高抬贵手。",
+                    "你夸张的反应让小红帽愣了一下，很快，她装作无意地说道：",
+                    { text: "“我是在帮你呢，毕竟你们这些外来者不都是想要解答迷题吗？自己成为笃定的答案之一不好吗？”", effect: "warm" },
+                    "你愣住了。",
+                    "什么叫……解答迷题？",
+                    { type: "typing", text: "小红帽知道副本的存在？她知道……自己会死？", effect: "warm" },
+                    { type: "typing", text: "她是怎么知道的？", effect: "warm" },
+                    "你难以形容此刻的感受。",
+                    "就像是游戏中的某个角色突破了第四面墙，完完整整地站在了你面前。",
+                    "问题在于……",
+                    { text: "这是一个恐游角色！", effect: "shake" },
+                    "想到路上那头巨狼的惨状，你不禁打了个寒颤。",
+                    { text: "“你的时间不多了哦，你拒绝了我的帮助，那么我就不会给你第二次机会。”", effect: "warm" },
+                    "说完这句话，“小红帽”如幽灵一般在你身前消失了。",
+                    "你再度看了眼迷题。",
+                    "“谁杀死了小红帽？”",
+                    "谁又能杀死她？",
+                    { text: "谁能够杀死一个突破了第四面墙的……<span class='text-red'>怪物</span>。", effect: "red" },
+                    { type: "typing", text: "人们总习惯于把自己无法理解的强大存在称为怪物。" },
+                    { requireGun: true, text: "你低头看着自己手中的猎枪和斧头。" },
+                    { requireGun: true, text: "似乎，如今再看，这句迷题有了新的诠释？" },
+                    { requireGun: true, text: "——怎样才能杀死小红帽？", effect: "warm" },
+                    { requireGun: true, text: "接下来，你：" },
+                    "……",
+                ],
+                choices: [
+                    { text: "开枪射杀“小红帽”！", target: "start6_shoot", requireGun: true, effect: "red" },
+                ],
+                next: "start6_end",
+            },
+
+            "start6_mock": {
+                lines: [
+                    "你——",
+                ],
+                choices: [
+                    { text: "张开了嘴", target: "start6_open_mouth" },
+                    { text: "撒泼打滚", target: "start6_tantrum" },
+                ],
+                noDivider: true,
+            },
+
+            "start6_open_mouth": {
+                lines: [
+                    "……",
+                    "你带上狼耳朵，张嘴一口将她吞吃入腹。",
+                    "但你还未食指大动，便已脑洞大开。",
+                    "小红帽甩了甩斧头上的血，转身离开。",
+                    "留下你被整整齐齐劈成两半的尸体。",
+                    "……",
+                ],
+                next: "ending_gourmet",
+            },
+
+            "start6_tantrum": {
+                lines: [
+                    "“求你去死一下吧！然后告诉我是谁杀了你！”",
+                    "小红帽哑然：“可恶的外来者，我好心请你喝葡萄酒，你竟然想要我死！”",
+                    "小红帽小发雷霆，用斧柄敲了你的脑袋，在你捂住头哀嚎时，一个闪身消失在视野中。",
+                    "……",
+                ],
+                next: "start6_end",
+            },
+
+            "start6_dispute": {
+                lines: [
+                    "你无情地拆穿了“小红帽”漏洞百出的计谋。",
+                    "“小红帽”仍然是那一副天真无辜的模样。",
+                    "“好吧，既然你不吃我的话，那我得离开了。”她说着，一个闪身消失在你的视野中。",
+                    "……",
+                ],
+                next: "start6_end",
+            },
+
+            "start6_shoot": {
+                lines: [
+                    "“小红帽”也没料到你如此性情。",
+                    "你举枪瞄准时，她下意识后退一步，只一步，就拉开了半米远。",
+                    "但最终，她什么也没做，只是站在原地，等待你开枪。",
+                    { text: "“砰！”", effect: "blood", screenShake: true },
+                    "你按下扳机，子弹从枪膛中轰出。",
+                    "“我讨厌你。”“小红帽”说，她脸上没有面对死亡的恐惧，只是微微撇下嘴，一副很不高兴的样子。",
+                    "子弹命中了她的胸口，创口很小，因此她并不会立即失去行动力。",
+                    "“小红帽”将周遭扫视一圈，目光落在一颗高耸的松树上。",
+                    "你顺着她的视线往上看去，刹那间，那道鲜红的身影竟已落在了绿荫层叠的树冠之中。",
+                    "她坐在树桠的一端，头抵着树干，轻轻闭上眼。",
+                    "暖洋洋的阳光穿透枝叶，落在她的身上。",
+                    "林中传来清脆的鸟鸣。",
+                    "微风轻柔地抚过她的脸庞。",
+                    "你仰头注视着这一幕。",
+                    "注视森林安葬它地孩子。",
+                    "……",
+                    { text: "你杀死了——“小红帽”。", effect: "red" },
+                    "是否提交答案？",
+                    "……",
+                ],
+                choices: [
+                    { text: "是", forceRiddle: true, riddleKey: "{xing}", riddleThen: { yes: "yourself_true", no: "yourself_true" } },
+                    { text: "否", target: "start_final_question" },
+                ],
+            },
+
+            "start6_end": {
+                lines: [
+                    "而副本探索时间已经所剩无几。",
+                ],
+                next: "start_final_question",
+                noDivider: true,
+            },
+
+            "family": {
+                lines: [
+                    { text: "【回答错误！】", effect: "violence" },
+                    "系统冰冷地宣判了你的结局：",
+                    { type: "typing", text: "【您已被剥夺玩家身份，将永久滞留副本！】", effect:"red", blackScreen: true },
+                    "……",
+                    "你拎着斧头，来到一处庭院。",
+                    "“爱丽，你来了。”披着红斗篷的小姑娘们笑着向你打招呼。",
+                ],
+                next: "ending_family",
+                noDivider: true,
+            },
+            "ending_family": {
+                lines: [
+                    "“你拥有了崭新的名字与家。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 15,
+                endingName: "崭新的名字与家"
+            },
+
+            "ending_mindless": {
+                lines: [
+                    "“或许，你需要再仔细思考一番。”",
+                ],
+                isEnding: true,
+                endingId: 16,
+                endingName: "再想想"
+            },
+
+            "yourself": {
+                lines: [
+                    { text: "【回答错误！】", effect: "violence" },
+                    "系统冰冷地宣判了你的结局：",
+                    { type: "typing", text: "【您已被剥夺玩家身份，将永久滞留副本！】", effect:"red", blackScreen: true },
+                    "……",
+                ],
+                next: "end_yourself",
+                noDivider: true,
+            },
+
+            "end_yourself":{
+                lines: [
+                    "“你并未杀死真正的“小红帽”。——或者说，你还没有资格杀死她。”",
+                ],
+                isEnding: true,
+                endingId: 17,
+                endingName: "小红帽"
+            },
+
+            "Abyss": {
+                lines: [
+                    "副本才是杀死“小红帽”的罪魁祸首不是吗？",
+                    "如果没有副本，“小红帽”根本就不会死！",
+                    "所以，凶手一定主导了一切的系统——阿比斯！",
+                    "然而。",
+                    { text: "【回答错误！】", effect: "violence" },
+                    "系统冰冷地宣判了你的结局：",
+                    { type: "typing", text: "【您已被剥夺玩家身份，将永久滞留副本！】", effect:"red", blackScreen: true },
+                    "……",
+                ],
+                next: "end_Abyss",
+                noDivider: true,
+            },
+
+            "end_Abyss":{
+                lines: [
+                    "“我不知道啊，肯定是阿比斯的错。”",
+                ],
+                isEnding: true,
+                endingId: 18,
+                endingName: "阿巴阿巴"
+            },
+
+            "living": {
+                lines: [
+                    "你坚信“小红帽”根本没死，于是，空白成为了你的答案。",
+                    { text: "【回答错误！】", effect: "violence" },
+                    "系统冰冷地宣判了你的结局：",
+                    { type: "typing", text: "【您已被剥夺玩家身份，将永久滞留副本！】", effect:"red", blackScreen: true },
+                    "……",
+                    "你的背佝偻下来，肚子慢慢鼓起，身形肉眼可见地干瘪起来，一道又一道皱纹爬上皮肤。",
+                    "两只倒立的狼耳从头顶冒出，为你伪造出一头靓丽的齐肩短发。",
+                    "渐渐地，你的模样已经同“外婆”别无二致。",
+                    "无力感席卷全身。",
+                    "你躺在床上，闭上了眼。",
+                    "安静等待下一个小红帽为你送来葡萄酒和蛋糕。",
+                ],
+                next: "ending_living",
+                noDivider: true,
+            },
+            "ending_living": {
+                lines: [
+                    "“不会的题就空着——你学生时期就是这么做的，所以这一次，你同样留下了空白。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 19,
+                endingName: "学生气"
+            },
+
+            "Red": {
+                lines: [
+                    "谁能杀死小红帽？——毫无疑问，只有小红帽自己。",
+                    { type:"typing", text: "【回答正确！】", effect:"warm"  },
+                    { type:"typing", text: "【恭喜，您已成功通关副本《谁杀死了小红帽》，请返回接驳点等待乌托比斯的到来。】", effect:"warm" },
+                ],
+                next: "ending_Red",
+                noDivider: true,
+            },
+            "ending_Red": {
+                lines: [
+                    "“或许，还有更完美的通关方式？”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 20,
+                endingName: "普通评级"
+            },
+
+            "yourself_true": {
+                lines: [
+                    "你摩挲着手中的猎枪，毫不犹豫在方框中填入了自己的姓名。",
+                    { type:"typing", text: "【回答正确！】", effect:"warm"  },
+                    { type:"typing", text: "【恭喜，您已完美通关副本《谁杀死了小红帽》，请返回接驳点等待乌托比斯的到来。】", effect:"warm" },
+                    { type: "typing",text: "【您获得了道具——“永不落空的猎枪”。】", effect:"warm" },
+                    { type: "typing", text: "点此查看详情", clickable: true },
+                ],
+                next: "ending_yourself_true",
+                noDivider: true,
+            },
+            "ending_yourself_true": {
+                lines: [
+                    "“你的智慧与勇气值得嘉许，但真正帮助你通关的，从来不是你自身，而是主神们的仁慈。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 21,
+                endingName: "完美通关"
+            },
+
+            "grandma": {
+                lines: [
+                    { text: "【回答错误！】", effect: "violence" },
+                    "系统冰冷地宣判了你的结局：",
+                    { type: "typing", text: "【您已被剥夺玩家身份，将永久滞留副本！】", effect:"red", blackScreen: true },
+                    "……",
+                    "你的背佝偻下来，肚子慢慢鼓起，身形肉眼可见地干瘪起来，一道又一道皱纹爬上皮肤。",
+                    "两只倒立的狼耳从头顶冒出，为你伪造出一头靓丽的齐肩短发。",
+                    "渐渐地，你的模样已经同“外婆”别无二致。",
+                    "无力感席卷全身。",
+                    "你躺在床上，闭上了眼。",
+                    "安静等待下一个小红帽为你送来葡萄酒和蛋糕。",
+                ],
+                next: "ending_grandma",
+                noDivider: true,
+            },
+            "ending_grandma": {
+                lines: [
+                    "“从今往后，你将拥有无穷无尽的葡萄酒和蛋糕。”",
+                    "……",
+                ],
+                isEnding: true,
+                endingId: 22,
+                endingName: "葡萄酒和蛋糕爱好者"
+            },
+        }
+
+
+        const FRIEND_CONFIG = {
+            1: { name: "奥兰",   correct: "右手套" },
+            2: { name: "塞蕾娜", correct: "左手套" },
+            3: { name: "玛莎",   correct: "左手套" },
+            4: { name: "西娅",   correct: "红兜帽" },
+            5: { name: "希尔薇", correct: "果篮中的餐布" },
+        };
+
+        let friendState = {
+            currentFriend: 1,
+            correctCount: 0,
+            totalAttempts: 0,
+            wrongChoices: [],
+        };
+
+        const FRIEND_OPTIONS = [
+            { text: "红兜帽", friendChoice: true },
+            { text: "左手套", friendChoice: true },
+            { text: "右手套", friendChoice: true },
+            { text: "果篮中的餐布", friendChoice: true },
+        ];
+
+        let flowerFaulseReloads = parseInt(localStorage.getItem('flower_faulse_reloads') || '0');
+        let flowersFromCompanion = false;
+
+        let gameState = {
+            currentScene: "start1",
+            lineIndex: 0,
+            history: [],
+            endingsFound: (function () {
+                try {
+                    const raw = JSON.parse(localStorage.getItem('endings_found_v2') || '[]');
+                    if (!Array.isArray(raw)) return [];
+                    return [...new Set(
+                        raw.map(v => Number(v))
+                            .filter(v => Number.isInteger(v) && v >= 1 && v <= 99)
+                    )];
+                } catch (e) {
+                    return [];
+                }
+            })(),
+            playerInfo: {
+                xing: "无名氏",
+            },
+            items: []
+        }
+
+        localStorage.removeItem('endings_found');
+
+        function hasAxe() {
+            return gameState.items.includes("斧头");
+        }
+
+        function resolveScene(target) {
+            if (target === "start_flowers_faulse") {
+                if (flowerFaulseReloads >= 5) return "start_flowers_faulse_5";
+                if (flowerFaulseReloads >= 3) return "start_flowers_faulse_3";
+            }
+
+            if (target === "start_flowers_true" && gameState.currentScene === "start_woof_true_flowers_true") {
+                flowersFromCompanion = true;
+            }
+
+            if (target === "start_approve" && hasCorpse()) {
+                return "start_approve_corpse";
+            }
+
+            if (target === "start4" && gameState.currentScene === "start_flowers_true") {
+                if (flowersFromCompanion) {
+                    flowersFromCompanion = false;
+                    return "start4";
+                } else {
+                    return "start4_好大的胆子竟然不跟小红帽同行，害得我多写几行代码你罪该万死";
+                }
+            }
+            return target;
+        }
+
+        function hasGun() {
+            return gameState.items.includes("猎枪");
+        }
+
+        function hasCorpse() {
+            return gameState.items.includes("尸体");
+        }
+
+        let flowerState = {
+            count: 0,
+            axeAtStart: null,
+        };
+
+        let _longPressTimer = null;
+
+
+        document.getElementById('game-title').innerText = config.title;
+
+        const bgm = document.getElementById('bgm');
+        let bgmStarted = false;
+
+        function startBGM() {
+            if (bgmStarted) return;
+            bgmStarted = true;
+            bgm.volume = 0.5;
+            bgm.play().catch(() => { bgmStarted = false; });
+        }
+
+        function handleGlobalClick(e) {
+            if (isCountingDown) return;
+            if (isBlackScreen) {
+                closeBlackScreen();
+                return;
+            }
+            if (numberGameState.active || numberGameState.ending) return;
+            if (waitingForDetail) return;
+            if (isBloodEffect) {
+                endBloodEffect();
+                return;
+            }
+            if (e.target.closest('#top-nav')) return;
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.btn') || e.target.closest('.modal')) {
+                return;
+            }
+            if (document.querySelector('.modal[style*="block"]')) return;
+            if (riddleForced) return;
+            if (document.getElementById('play-screen').classList.contains('active')) {
+                handleNext();
+            }
+        }
+
+        function handleNext() {
+            if (riddleForced) return;
+            if (isBlackScreen) return;
+            if (isCountingDown) return;
+            if (waitingForRiddle) return;
+            if (isProcessing) return;
+            if (numberGameState.active) return;
+            if (waitingForDetail) return;
+            const scene = storyData[gameState.currentScene];
+            if (!scene || isTyping || isChoiceWaiting) return;
+            isProcessing = true;
+
+            if (gameState.lineIndex >= scene.lines.length) {
+                if (scene.choices) {
+                    renderChoices(scene.choices);
+                    isProcessing = false;
+                } else if (scene.isEnding) {
+                    recordEnding(scene.endingId, scene.endingName);
+                    isProcessing = false;
+                } else if (scene.numberGame) {
+                    isProcessing = false;
+                    startNumberGame();
+                    return;
+                } else if (scene.finalQuestion) {
+                    isProcessing = false;
+                    startFinalQuestion();
+                    return;
+                } else if (scene.dynamicNext) {
+                    const targetScene = scene.dynamicNext();
+                    gameState.currentScene = targetScene;
+                    gameState.lineIndex = 0;
+                    const t = storyData[targetScene];
+                    if (!(t && t.noDivider)) renderDivider();
+                    isProcessing = false;
+                    handleNext();
+                } else if (scene.next) {
+                    let nextScene = scene.next;
+                    if (nextScene === "start_next_friend") {
+                        friendState.currentFriend++;
+                        friendState.wrongChoices = [];
+                        nextScene = "start_friend_" + friendState.currentFriend;
+                        if (!storyData[nextScene]) nextScene = "start_success";
+                    }
+                    nextScene = resolveScene(nextScene);
+                    gameState.currentScene = nextScene;
+                    gameState.lineIndex = 0;
+                    const targetScene = storyData[nextScene];
+                    if (!(targetScene && targetScene.noDivider)) {
+                        renderDivider();
+                    }
+                    isProcessing = false;
+                    handleNext();
+                }
+                return;
+            }
+
+            const currentLine = scene.lines[gameState.lineIndex];
+
+            if (typeof currentLine === 'object') {
+                if (currentLine.requireAxe && !hasAxe()) {
+                    gameState.lineIndex++;
+                    isProcessing = false;
+                    handleNext();
+                    return;
+                }
+                if (currentLine.requireNoAxe && hasAxe()) {
+                    gameState.lineIndex++;
+                    isProcessing = false;
+                    handleNext();
+                    return;
+                }
+                if (currentLine.requireGun && !hasGun()) {
+                    gameState.lineIndex++;
+                    isProcessing = false;
+                    handleNext();
+                    return;
+                }
+                if (currentLine.requireNoGun && hasGun()) {
+                    gameState.lineIndex++;
+                    isProcessing = false;
+                    handleNext();
+                    return;
+                }
+                if (currentLine.item && !gameState.items.includes(currentLine.item)) {
+                    gameState.items.push(currentLine.item);
+                }
+            }
+
+            let text = "";
+            let effect = null;
+            let isTypingLine = false;
+
+            if (typeof currentLine === 'string') {
+                text = currentLine;
+            } else {
+                if (currentLine.ifGun && hasGun()) {
+                    text = currentLine.ifGun;
+                } else if (currentLine.ifAxe && hasAxe()) {
+                    text = currentLine.ifAxe;
+                } else {
+                    text = currentLine.text;
+                }
+                effect = currentLine.effect;
+                if (currentLine.type === 'typing') isTypingLine = true;
+            }
+
+            text = replaceParams(text);
+
+            if (isTypingLine) {
+                renderTyping(text, effect);
+            } else {
+                renderLine(text, effect);
+            }
+
+            if (effect === 'violence') {
+                triggerViolenceGlitch();
+            }
+
+            if (effect === 'blood') {
+                triggerBloodEffect();
+            }
+
+            if (effect === 'shake' || (typeof currentLine === 'object' && currentLine.screenShake)) {
+                triggerScreenShake();
+            }
+
+            if (typeof currentLine === 'object' && currentLine.showRiddle) {
+                showRiddleButton();
+                waitingForRiddle = true;
+            }
+
+            if (typeof currentLine === 'object' && currentLine.blackScreen) {
+                showBlackScreen(text, () => {
+                    setTimeout(() => handleNext(), 100);
+                });
+            }
+
+            if (typeof currentLine === 'object' && currentLine.countdown) {
+                const cdFormat = currentLine.countdownFormat || "long";
+                if (isTyping) {
+                    pendingCountdown = true;
+                    pendingCountdownFormat = cdFormat;
+                } else {
+                    setTimeout(() => {
+                        if (!isCountingDown) {
+                            showCountdown(() => {
+                                setTimeout(() => handleNext(), 100);
+                            }, cdFormat);
+                        }
+                    }, 600);
+                }
+            }
+
+            gameState.lineIndex++;
+
+            if (!isTyping) {
+                isProcessing = false;
+            }
+        }
+
+        let isTyping = false;
+        let isChoiceWaiting = false;
+        let isProcessing = false;
+
+        function renderLine(text, effect) {
+            const div = document.createElement('div');
+            div.className = 'text-line';
+            if (effect === 'violence' || effect === 'blood') div.classList.add('text-violence');
+            if (effect === 'warm') div.classList.add('text-warm');
+            const scene = storyData[gameState.currentScene];
+            if (scene && scene.isEnding) div.classList.add('text-ending');
+            if (effect === 'red') div.classList.add('text-red');
+            if (typeof text === 'string' && /<[a-z][\s\S]*>/i.test(text)) {
+                div.innerHTML = text;
+            } else {
+                div.innerText = text;
+            }
+            document.getElementById('text-container').appendChild(div);
+            autoScroll();
+        }
+
+        function renderTyping(text, effect) {
+            isTyping = true;
+            const div = document.createElement('div');
+            div.className = 'text-line text-psychological';
+            if (effect === 'violence' || effect === 'blood') div.classList.add('text-violence');
+            if (effect === 'warm') div.classList.add('text-warm');
+            if (effect === 'red') div.classList.add('text-red');
+            const scene = storyData[gameState.currentScene];
+            if (scene && scene.isEnding) div.classList.add('text-ending');
+            document.getElementById('text-container').appendChild(div);
+
+            const currentLine = scene.lines[gameState.lineIndex];
+            const glitch = (typeof currentLine === 'object' && currentLine.glitchTrigger) ? currentLine : null;
+            let triggerEnd = -1;
+            if (glitch) {
+                const idx = text.indexOf(glitch.glitchTrigger);
+                if (idx >= 0) triggerEnd = idx + glitch.glitchTrigger.length;
+            }
+
+            const finishTyping = () => {
+                isTyping = false;
+                isProcessing = false;
+
+                if (currentLine && currentLine.clickable) {
+                    const tri = document.createElement('span');
+                    tri.className = 'blink-triangle';
+                    tri.innerText = '▼';
+                    div.appendChild(tri);
+
+                    div.style.cursor = 'pointer';
+                    div.title = '点击查看详情';
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        openDetail();
+                    };
+
+                    waitingForDetail = true;
+                }
+
+                if (pendingCountdown) {
+                    pendingCountdown = false;
+                    const fmt = pendingCountdownFormat || "long";
+                    pendingCountdownFormat = "long";
+                    setTimeout(() => {
+                        showCountdown(() => {
+                            setTimeout(() => handleNext(), 100);
+                        }, fmt);
+                    }, 400);
+                }
+            };
+
+            let i = 0;
+            const timer = setInterval(() => {
+                if (triggerEnd > 0 && i === triggerEnd) {
+                    clearInterval(timer);
+                    playGlitch(div, glitch, finishTyping);
+                    return;
+                }
+                if (i >= text.length) {
+                    clearInterval(timer);
+                    finishTyping();
+                    return;
+                }
+                div.innerText += text[i++];
+                autoScroll();
+            }, config.typingSpeed);
+        }
+
+        function playGlitch(div, glitch, callback) {
+            const baseText = div.innerText;
+            const garble = glitch.glitchGarble || "%$#^>L%)(*&^%@$#@";
+
+            triggerViolenceGlitch();
+
+            let j = 0;
+            const garbleTimer = setInterval(() => {
+                div.innerText = baseText + garble.slice(0, ++j);
+                autoScroll();
+                if (j >= garble.length) {
+                    clearInterval(garbleTimer);
+                    setTimeout(() => {
+                        div.innerText = glitch.glitchFinal || baseText;
+                        div.classList.remove('text-red', 'text-violence', 'text-warm');
+                        const finalEffect = glitch.glitchFinalEffect;
+                        if (finalEffect === 'warm') div.classList.add('text-warm');
+                        else if (finalEffect === 'violence') div.classList.add('text-violence');
+                        else if (finalEffect === 'red') div.classList.add('text-red');
+                        autoScroll();
+                        if (callback) callback();
+                    }, 900);
+                }
+            }, 45);
+        }
+
+        function replaceParams(text) {
+            if (!text) return "";
+            const cfg = FRIEND_CONFIG[friendState.currentFriend];
+            return text.replace(/{xing}/g, gameState.playerInfo.xing)
+                .replace(/{ming}/g, gameState.playerInfo.ming)
+                .replace(/{friendName}/g, cfg ? cfg.name : "???");
+        }
+
+        function renderChoices(choices) {
+            isChoiceWaiting = true;
+            const container = document.getElementById('choice-container');
+            container.innerHTML = '';
+            container.style.display = 'flex';
+
+            if (gameState.currentScene === "start_woof") {
+                if (flowerState.axeAtStart === null || hasAxe() !== flowerState.axeAtStart) {
+                    flowerState.count = 0;
+                    flowerState.axeAtStart = hasAxe();
+                }
+            }
+
+            const filtered = choices.filter(c => {
+                if (c.friendChoice && friendState.wrongChoices.includes(c.text)) return false;
+                if (c.requireAxe && !hasAxe()) return false;
+                if (c.requireNoAxe && hasAxe()) return false;
+                if (c.requireGun && !hasGun()) return false;
+                if (c.requireNoGun && hasGun()) return false;
+                if (c.requireAxeOrGun && !hasAxe() && !hasGun()) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                const scene = storyData[gameState.currentScene];
+                if (scene && scene.next) {
+                    isChoiceWaiting = false;
+                    container.style.display = 'none';
+                    gameState.currentScene = scene.next;
+                    gameState.lineIndex = 0;
+                    renderDivider();
+                    handleNext();
+                }
+                return;
+            }
+
+            filtered.forEach(choice => {
+                let rawText = choice.text;
+                if (choice.ifAxe && hasAxe()) rawText = choice.ifAxe;
+                const displayText = replaceParams(rawText);
+                const b = document.createElement('button');
+                b.className = 'btn';
+                b.innerText = displayText;
+
+                if (choice.hover && (!choice.hoverCondition || choice.hoverCondition())) {
+                    const origText = displayText;
+                    b.addEventListener('mouseenter', () => { b.innerText = choice.hover; });
+                    b.addEventListener('mouseleave', () => { b.innerText = origText; });
+                    b.addEventListener('touchstart', () => {
+                        clearTimeout(_longPressTimer);
+                        _longPressTimer = setTimeout(() => { b.innerText = choice.hover; }, 450);
+                    }, { passive: true });
+                    b.addEventListener('touchend', () => {
+                        clearTimeout(_longPressTimer);
+                        b.innerText = origText;
+                    });
+                    b.addEventListener('touchcancel', () => {
+                        clearTimeout(_longPressTimer);
+                        b.innerText = origText;
+                    });
+                }
+
+                b.onclick = (e) => {
+                    e.stopPropagation();
+                    clearTimeout(window._choiceTimeout);
+
+                    container.innerHTML = '';
+                    container.style.display = 'none';
+                    isChoiceWaiting = false;
+
+                    renderChoiceHistory(displayText, choice.effect);
+
+                    if (choice.friendChoice) {
+                        handleFriendChoice(choice.text);
+                        return;
+                    }
+
+                    if (choice.flowerChoice) {
+                        flowerState.count++;
+                        const threshold = hasAxe() ? 2 : 5;
+                        if (flowerState.count >= threshold && !gameState.items.includes("猎枪")) {
+                            gameState.items.push("猎枪");
+                        }
+                    }
+
+                    if (choice.forceRiddle) {
+                        document.getElementById('riddle-btn').classList.remove('visible');
+                        openRiddle(true);
+                        const inp = document.getElementById('riddle-input');
+                        if (choice.riddleKey) {
+                            pendingRiddle = choice;
+                            if (choice.riddleKey === "{xing}") {
+                                inp.value = gameState.playerInfo.xing;
+                                inp.readOnly = true;
+                                inp.placeholder = '';
+                            } else {
+                                inp.value = '';
+                                inp.readOnly = false;
+                                inp.placeholder = '在此输入答案';
+                            }
+                        } else {
+                            pendingRiddle = null;
+                            inp.value = '';
+                            inp.readOnly = false;
+                            inp.placeholder = '在此输入答案';
+                        }
+                        return;
+                    }
+
+                    let finalTarget = choice.target;
+                    if (choice.escalateTarget && choice.escalateKey) {
+                        if (localStorage.getItem(choice.escalateKey) === '1') {
+                            finalTarget = choice.escalateTarget;
+                        } else {
+                            localStorage.setItem(choice.escalateKey, '1');
+                        }
+                    }
+                    finalTarget = resolveScene(finalTarget);
+
+                    const jump = () => {
+                        gameState.currentScene = finalTarget;
+                        gameState.lineIndex = 0;
+                        const t = storyData[finalTarget];
+                        if (!(t && t.noDivider)) renderDivider();
+                        handleNext();
+                    };
+
+                    if (choice.delay) {
+                        setTimeout(jump, choice.delay);
+                    } else {
+                        jump();
+                    }
+                };
+
+                if (choice.timeout) {
+                    clearTimeout(window._choiceTimeout);
+                    window._choiceTimeout = setTimeout(() => {
+                        container.innerHTML = '';
+                        container.style.display = 'none';
+                        isChoiceWaiting = false;
+                        const fallback = choice.timeoutTarget || 'start_motty';
+                        gameState.currentScene = fallback;
+                        gameState.lineIndex = 0;
+                        const t = storyData[fallback];
+                        if (!(t && t.noDivider)) renderDivider();
+                        handleNext();
+                    }, choice.timeout);
+                }
+
+                container.appendChild(b);
+            });
+        }
+
+        function handleFriendChoice(choiceText) {
+            const cfg = FRIEND_CONFIG[friendState.currentFriend];
+            friendState.totalAttempts++;
+
+            if (choiceText === cfg.correct) {
+                friendState.correctCount++;
+                friendState.wrongChoices = [];
+                jumpToSceneDynamic("start_right");
+            } else {
+                friendState.wrongChoices.push(choiceText);
+
+                if (friendState.totalAttempts >= 11) {
+                    jumpToSceneDynamic("start_failure");
+                } else {
+                    jumpToSceneDynamic("start_faulty");
+                }
+            }
+        }
+
+        function jumpToSceneDynamic(sceneId) {
+            gameState.currentScene = sceneId;
+            gameState.lineIndex = 0;
+            isChoiceWaiting = false;
+            const c = document.getElementById('choice-container');
+            c.innerHTML = '';
+            c.style.display = 'none';
+            const targetScene = storyData[sceneId];
+            if (!(targetScene && targetScene.noDivider)) {
+                renderDivider();
+            }
+            handleNext();
+        }
+
+        function renderChoiceHistory(text, effect) {
+            const div = document.createElement('div');
+            div.className = 'text-line';
+            div.style.fontFamily = '"SimSun", "宋体", serif';
+            div.style.setProperty('font-family', '"SimSun", "宋体", serif', 'important');
+            if (effect === 'violence') div.classList.add('text-violence');
+            if (effect === 'warm') div.classList.add('text-warm');
+            if (effect === 'red') div.classList.add('text-red');
+            div.innerText = text;
+            document.getElementById('text-container').appendChild(div);
+        }
+
+        function renderDivider() {
+            const hr = document.createElement('hr');
+            hr.style.border = "0; border-top: 1px dashed #333; margin: 40px 0";
+            document.getElementById('text-container').appendChild(hr);
+        }
+
+        function showRiddleButton() {
+            document.getElementById('riddle-btn').classList.add('visible');
+        }
+
+        let waitingForRiddle = false;
+        let isCountingDown = false;
+        let pendingCountdown = false;
+        let pendingCountdownFormat = "long";
+
+        function showCountdown(callback, format) {
+            if (isCountingDown) return;
+            isCountingDown = true;
+
+            const mode = format || "long";
+            const fmt = mode === "short"
+                ? (s) => "00:00:" + String(s).padStart(2, '0')
+                : mode === "start6"
+                    ? (s) => "00:15:0" + s
+                    : (s) => "3:00:" + String(s).padStart(2, '0');
+
+            const overlay = document.createElement('div');
+            overlay.className = 'countdown-overlay';
+            overlay.id = 'countdown-overlay';
+
+            const box = document.createElement('div');
+            box.className = 'countdown-box';
+            const prefix = mode === "start6" ? "副本倒计时：" : "距离副本关闭还剩：";
+            box.innerHTML = prefix + '<span class="countdown-time" id="countdown-time">' + fmt(3) + '</span>';
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+
+            requestAnimationFrame(() => overlay.classList.add('visible'));
+
+            let seconds = 3;
+            const timeEl = box.querySelector('#countdown-time');
+            const timer = setInterval(() => {
+                seconds--;
+                timeEl.innerText = fmt(seconds);
+
+                timeEl.classList.remove('tick');
+                void timeEl.offsetWidth;
+                timeEl.classList.add('tick');
+
+                if (seconds <= 0) {
+                    clearInterval(timer);
+                    overlay.classList.remove('visible');
+                    setTimeout(() => {
+                        overlay.remove();
+                        isCountingDown = false;
+                        if (callback) callback();
+                    }, 500);
+                }
+            }, 1000);
+        }
+
+        let numberGameState = {
+            low: 1,
+            high: 20,
+            displayLow: 1,
+            displayHigh: 20,
+            bomb: 12,
+            active: false,
+            ending: false,
+            lastPlayerNum: null,
+            lastWolfNum: null,
+        };
+
+        function startNumberGame() {
+            numberGameState.low = 1;
+            numberGameState.high = 20;
+            numberGameState.displayLow = 1;
+            numberGameState.displayHigh = 20;
+            numberGameState.bomb = 12;
+            numberGameState.active = true;
+            numberGameState.ending = false;
+            numberGameState.lastPlayerNum = null;
+            numberGameState.lastWolfNum = null;
+
+            document.getElementById('riddle-btn').classList.remove('visible');
+            showNumberModal();
+        }
+
+        function showNumberModal() {
+            if (!numberGameState.active) return;
+            let modal = document.getElementById('number-game-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'number-game-modal';
+                modal.className = 'riddle-modal';
+                modal.innerHTML = `
+            <div class="riddle-question" id="number-range-title">1~20</div>
+            <input type="text" id="number-game-input" class="riddle-input" autocomplete="off" inputmode="numeric" placeholder="请输入数字">
+            <button class="riddle-confirm" id="number-game-confirm">确认</button>
+        `;
+
+                document.body.appendChild(modal);
+
+                const inp = modal.querySelector('#number-game-input');
+                inp.addEventListener('input', function () {
+                    this.value = this.value.replace(/\D/g, '');
+                });
+            }
+
+            document.getElementById('number-range-title').innerText =
+                numberGameState.displayLow + '~' + numberGameState.displayHigh;
+            document.getElementById('number-game-input').value = '';
+            document.getElementById('number-game-confirm').onclick = submitNumberGuess;
+
+            const input = document.getElementById('number-game-input');
+            input.onkeydown = function (e) {
+                if (e.key === 'Enter') submitNumberGuess();
+            };
+
+            modal.classList.add('visible');
+            setTimeout(function () { input.focus(); }, 120);
+        }
+
+        function submitNumberGuess() {
+            if (!numberGameState.active) return;
+            const input = document.getElementById('number-game-input');
+            const error = document.getElementById('number-game-error');
+            const val = parseInt(input.value.trim(), 10);
+            const low = numberGameState.low;
+            const high = numberGameState.high;
+            const bomb = numberGameState.bomb;
+
+            if (isNaN(val) || val < low || val > high) {
+                return;
+            }
+
+            document.getElementById('number-game-modal').classList.remove('visible');
+
+            renderLine('你：“' + val + '”');
+            numberGameState.lastPlayerNum = val;
+
+            if (val === bomb) {
+                document.getElementById('number-game-modal').classList.remove('visible');
+                numberGameState.active = false;
+                numberGameState.ending = false;
+                numberGameState.ending = true;
+                setTimeout(function () {
+                    jumpToSceneByRiddle('start_lose');
+                }, 1500);
+                return;
+            }
+
+            if (val < bomb) {
+                numberGameState.low = val + 1;
+            } else {
+                numberGameState.high = val - 1;
+            }
+
+            if (val < bomb) {
+                numberGameState.displayLow = val;
+            } else {
+                numberGameState.displayHigh = val;
+            }
+
+            setTimeout(function () {
+                const w = pickWolfNumber();
+                renderLine('狼外婆：“' + w + '”');
+                numberGameState.lastWolfNum = w;
+
+                if (w < bomb) {
+                    numberGameState.low = w + 1;
+                    numberGameState.displayLow = Math.max(numberGameState.displayLow, w);
+                } else if (w > bomb) {
+                    numberGameState.high = w - 1;
+                    numberGameState.displayHigh = Math.min(numberGameState.displayHigh, w);
+                }
+
+                if (w === bomb) {
+                    document.getElementById('number-game-modal').classList.remove('visible');
+                    numberGameState.active = false;
+                    numberGameState.ending = true;
+                    setTimeout(function () {
+                        jumpToSceneByRiddle('start_win');
+                    }, 1500);
+                    return;
+                }
+
+                if (numberGameState.low === bomb && numberGameState.high === bomb) {
+                    setTimeout(function () {
+                        renderLine('狼外婆：“' + bomb + '”');
+                        numberGameState.lastWolfNum = bomb;
+                        document.getElementById('number-game-modal').classList.remove('visible');
+                        numberGameState.active = false;
+                        numberGameState.ending = true;
+                        setTimeout(function () {
+                            jumpToSceneByRiddle('start_win');
+                        }, 1500);
+                    }, 600);
+                    return;
+                }
+
+                setTimeout(function () {
+                    showNumberModal();
+                }, 900);
+            }, 1000);
+        }
+
+        function pickWolfNumber() {
+            const low = numberGameState.low;
+            const high = numberGameState.high;
+            const bomb = numberGameState.bomb;
+
+            if (low === bomb && high === bomb) return bomb;
+
+            const candidates = [];
+            if (bomb - 1 >= low && bomb - 1 !== bomb) candidates.push(bomb - 1);
+            if (bomb + 1 <= high && bomb + 1 !== bomb) candidates.push(bomb + 1);
+
+            if (candidates.length > 0) {
+                return candidates[Math.floor(Math.random() * candidates.length)];
+            }
+            if (low < bomb) return low;
+            if (high > bomb) return high;
+            return bomb;
+        }
+
+        function startFinalQuestion() {
+            if (finalQuestionState.active) return;
+            finalQuestionState.active = true;
+            finalQuestionState.submitted = false;
+            finalQuestionState.mindless = false;
+            pendingRiddle = null;
+            renderLine("谁杀死了小红帽？");
+            showRiddleButton();
+            showFinalQuestionChoices();
+            window._lastTenFired = true;
+            showTopRightCountdown(30, () => {
+                hideTopRightCountdown();
+                handleFinalTimeout();
+            }, null);
+        }
+
+        function showFinalQuestionChoices() {
+            const container = document.getElementById('choice-container');
+            container.innerHTML = '';
+            container.style.display = 'flex';
+            isChoiceWaiting = true;
+
+            const choices = [
+                { text: "坚称小红帽根本没死", value: "",             mindless: true },
+                { text: "是你，阿比斯！",   value: "阿比斯" },
+                { text: "狼",               value: "狼" },
+                { text: "狼外婆",           value: "狼外婆" },
+                { text: "猎人",             value: "猎人" },
+                { text: "小红帽",           value: "小红帽" },
+                { text: "你自己",           value: "{xing}" },
+                { text: "我需要再想想",     value: null,            thinkMore: true },
+            ];
+
+            choices.forEach(choice => {
+                const b = document.createElement('button');
+                b.className = 'btn';
+                b.innerText = choice.text;
+                b.onclick = (e) => {
+                    e.stopPropagation();
+                    renderChoiceHistory(choice.text, null);
+
+                    container.innerHTML = '';
+                    container.style.display = 'none';
+
+                    if (choice.thinkMore) {
+                        return;
+                    }
+
+                    finalQuestionState.mindless = !!choice.mindless;
+
+                    const inp = document.getElementById('riddle-input');
+                    inp.value = replaceParams(choice.value || "");
+                    inp.readOnly = true;
+                    inp.placeholder = '';
+                    pendingRiddle = null;
+                    openRiddle(true);
+                };
+                container.appendChild(b);
+            });
+        }
+
+        function handleFinalTimeout() {
+            if (!finalQuestionState.active || finalQuestionState.submitted) return;
+
+            const modal = document.getElementById('riddle-modal');
+            if (modal && modal.classList.contains('visible')) {
+                confirmRiddle();
+                return;
+            }
+
+            finalQuestionState.submitted = true;
+            finalQuestionState.active = false;
+            jumpToSceneByRiddle("ending_living");
+        }
+
+        let topRightTimer = null;
+
+        function showTopRightCountdown(seconds, onComplete, onLastTen) {
+            let el = document.getElementById('topright-countdown');
+            if (el) el.remove();
+
+            el = document.createElement('div');
+            el.id = 'topright-countdown';
+            el.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(0,0,0,0.92);
+                border: 2px solid #8b0000;
+                color: #c04040;
+                padding: 10px 18px;
+                font-family: var(--font-main);
+                font-size: 1.05rem;
+                letter-spacing: 2px;
+                z-index: 5000;
+                text-shadow: 0 0 8px rgba(255,0,0,0.6);
+            `;
+            document.body.appendChild(el);
+
+            let remaining = seconds;
+            let paused = false;
+            el.innerText = '副本关闭倒计时：' + remaining + 's';
+
+            clearInterval(topRightTimer);
+            topRightTimer = setInterval(() => {
+                if (paused) return;
+                remaining--;
+                el.innerText = '副本关闭倒计时：' + remaining + 's';
+
+                if (remaining <= 10 && onLastTen && !window._lastTenFired) {
+                    window._lastTenFired = true;
+                    paused = true;
+                    onLastTen(() => { paused = false; });
+                }
+
+                if (remaining <= 0) {
+                    clearInterval(topRightTimer);
+                    el.remove();
+                    if (onComplete) onComplete();
+                }
+            }, 1000);
+        }
+
+        function hideTopRightCountdown() {
+            clearInterval(topRightTimer);
+            const el = document.getElementById('topright-countdown');
+            if (el) el.remove();
+        }
+
+        let isBloodEffect = false;
+        let bloodEffectTimer = null;
+
+        function triggerBloodEffect() {
+            if (isBloodEffect) return;
+            isBloodEffect = true;
+
+            let overlay = document.getElementById('blood-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'blood-overlay';
+                document.body.appendChild(overlay);
+            }
+            overlay.innerHTML = '';
+            overlay.style.opacity = '';
+
+            const darken = document.createElement('div');
+            darken.className = 'blood-darken';
+            overlay.appendChild(darken);
+
+            const svgWrap = document.createElement('div');
+            svgWrap.innerHTML = `
+                <svg class="blood-splat-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="paperEdge" x="-40%" y="-40%" width="180%" height="180%">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.015 0.02" numOctaves="3" seed="5" result="n1"/>
+                            <feDisplacementMap in="SourceGraphic" in2="n1" scale="14" xChannelSelector="R" yChannelSelector="G" result="s1"/>
+                            <feTurbulence type="fractalNoise" baseFrequency="0.12 0.1" numOctaves="2" seed="9" result="n2"/>
+                            <feDisplacementMap in="s1" in2="n2" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+                        </filter>
+
+                        <radialGradient id="bGrad" cx="50%" cy="50%" r="55%">
+                            <stop offset="0%"   stop-color="rgba(130, 2, 2, 0.98)"/>
+                            <stop offset="18%"  stop-color="rgba(118, 1, 1, 0.9)"/>
+                            <stop offset="38%"  stop-color="rgba(102, 0, 0, 0.72)"/>
+                            <stop offset="58%"  stop-color="rgba(85, 0, 0, 0.48)"/>
+                            <stop offset="78%"  stop-color="rgba(65, 0, 0, 0.22)"/>
+                            <stop offset="92%"  stop-color="rgba(50, 0, 0, 0.06)"/>
+                            <stop offset="100%" stop-color="rgba(40, 0, 0, 0)"/>
+                        </radialGradient>
+                    </defs>
+
+                    <g filter="url(#paperEdge)">
+                        <ellipse cx="200" cy="200" rx="0" ry="0" fill="url(#bGrad)" opacity="0">
+                            <animate attributeName="rx" values="0;32;55;72" dur="3.2s" fill="freeze" keyTimes="0;0.25;0.65;1"/>
+                            <animate attributeName="ry" values="0;30;52;68" dur="3.2s" fill="freeze" keyTimes="0;0.25;0.65;1"/>
+                            <animate attributeName="opacity" values="0;0.9;1;0.95" dur="3.2s" fill="freeze" keyTimes="0;0.25;0.65;1"/>
+                        </ellipse>
+                    </g>
+                </svg>
+            `;
+            overlay.appendChild(svgWrap.firstElementChild);
+
+            requestAnimationFrame(() => overlay.classList.add('active'));
+
+            clearTimeout(bloodEffectTimer);
+            bloodEffectTimer = setTimeout(() => {
+                endBloodEffect();
+            }, 4200);
+        }
+
+        function endBloodEffect() {
+            if (!isBloodEffect) return;
+            isBloodEffect = false;
+            clearTimeout(bloodEffectTimer);
+
+            const overlay = document.getElementById('blood-overlay');
+            if (!overlay) return;
+            overlay.classList.remove('active');
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.innerHTML = '';
+                overlay.style.opacity = '';
+            }, 500);
+        }
+
+        function triggerViolenceGlitch() {
+            let layer = document.getElementById('violence-overlay');
+            if (!layer) {
+                layer = document.createElement('div');
+                layer.id = 'violence-overlay';
+                document.body.appendChild(layer);
+            }
+            layer.classList.remove('active');
+            void layer.offsetWidth;
+            layer.classList.add('active');
+            clearTimeout(window._glitchTimer);
+            window._glitchTimer = setTimeout(() => {
+                layer.classList.remove('active');
+            }, 1000);
+        }
+
+        function triggerScreenShake() {
+            const page = document.querySelector('.page.active');
+            if (!page) return;
+            page.classList.remove('screen-shake');
+            void page.offsetWidth;
+            page.classList.add('screen-shake');
+            clearTimeout(window._shakeTimer);
+            window._shakeTimer = setTimeout(() => {
+                page.classList.remove('screen-shake');
+            }, 950);
+        }
+
+        let isBlackScreen = false;
+        let blackScreenCallback = null;
+
+        function showBlackScreen(text, callback) {
+            if (isBlackScreen) return;
+            isBlackScreen = true;
+            blackScreenCallback = callback || null;
+
+            const overlay = document.createElement('div');
+            overlay.id = 'black-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.background = '#000';
+            overlay.style.zIndex = '99999';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.color = '#c04040';
+            overlay.style.textShadow = '0 0 12px rgba(255,0,0,0.6)';
+            overlay.style.fontFamily = 'var(--font-main)';
+            overlay.style.fontSize = '1.3rem';
+            overlay.style.letterSpacing = '3px';
+            overlay.style.textAlign = 'center';
+            overlay.style.padding = '20px';
+            overlay.style.boxSizing = 'border-box';
+            overlay.style.cursor = 'pointer';
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.9s ease';
+            overlay.style.userSelect = 'none';
+            overlay.innerText = text;
+
+            overlay.onclick = function (ev) {
+                ev.stopPropagation();
+                closeBlackScreen();
+            };
+
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => { overlay.style.opacity = '1'; });
+        }
+
+        function closeBlackScreen() {
+            const overlay = document.getElementById('black-overlay');
+            if (!overlay) {
+                isBlackScreen = false;
+                return;
+            }
+            if (overlay.dataset.closing === '1') return;
+            overlay.dataset.closing = '1';
+
+            overlay.style.opacity = '0';
+
+            setTimeout(() => {
+                overlay.remove();
+                isBlackScreen = false;
+                const cb = blackScreenCallback;
+                blackScreenCallback = null;
+                if (cb) cb();
+            }, 900);
+        }
+
+        let riddleForced = false;
+
+        function openDetail() {
+            document.getElementById('detail-modal').classList.add('visible');
+        }
+
+        function closeDetail() {
+            document.getElementById('detail-modal').classList.remove('visible');
+            waitingForDetail = false;
+            autoScroll();
+        }
+
+            function openRiddle(forced = false) {
+                if (riddleForced && !forced) return;
+
+                const modal = document.getElementById('riddle-modal');
+                modal.classList.add('visible');
+                if (forced) {
+                    modal.classList.add('forced');
+                    riddleForced = true;
+                } else {
+                    modal.classList.remove('forced');
+                    riddleForced = false;
+                }
+                if (!forced) {
+                    document.getElementById('riddle-input').value = '';
+                }
+                document.getElementById('riddle-input').readOnly = false;
+                setTimeout(() => document.getElementById('riddle-input').focus(), 120);
+            }
+
+        function closeRiddle() {
+            if (riddleForced) return;
+            const modal = document.getElementById('riddle-modal');
+            modal.classList.remove('visible');
+            modal.classList.remove('forced');
+
+            if (waitingForRiddle) {
+                waitingForRiddle = false;
+                handleNext();
+            }
+        }
+
+        let pendingRiddle = null;
+        let waitingForDetail = false;
+
+        let finalQuestionState = {
+            active: false,
+            submitted: false,
+            mindless: false,
+        };
+
+        function stripQuotes(s) {
+            return s.trim().replace(/^["“”'']+|["“”'']+$/g, '').trim();
+        }
+
+        function confirmRiddle() {
+            const rawAnswer = document.getElementById('riddle-input').value;
+            const answer = stripQuotes(rawAnswer);
+
+            riddleForced = false;
+            waitingForRiddle = false;
+            const modal = document.getElementById('riddle-modal');
+            modal.classList.remove('visible');
+            modal.classList.remove('forced');
+            document.getElementById('riddle-btn').classList.remove('visible');
+
+            if (finalQuestionState.active && !finalQuestionState.submitted) {
+                finalQuestionState.submitted = true;
+                finalQuestionState.active = false;
+
+                let target;
+                if (answer === "") {
+                    target = finalQuestionState.mindless ? "living" : "ending_living";
+                } else {
+                    const playerName = gameState.playerInfo.xing;
+                    if (answer === playerName) target = "yourself";
+                    else if (answer === "狼" || answer === "猎人") target = "family";
+                    else if (["系统", "阿比斯", "Abyss", "系统自己", "系统自身", "副本", "副本本身"].includes(answer)) target = "Abyss";
+                    else if (answer === "小红帽") target = "Red";
+                    else if (answer === "外婆" || answer === "狼外婆") target = "grandma";
+                    else target = "ending_mindless";
+                }
+                jumpToSceneByRiddle(target);
+                return;
+            }
+
+            if (pendingRiddle) {
+                const choice = pendingRiddle;
+                pendingRiddle = null;
+                let key = choice.riddleKey;
+                if (key === "{xing}") key = gameState.playerInfo.xing;
+                const target = (answer === key)
+                    ? choice.riddleThen.yes
+                    : choice.riddleThen.no;
+                gameState.currentScene = target;
+                gameState.lineIndex = 0;
+                renderDivider();
+                handleNext();
+                return;
+            }
+
+            const playerName = gameState.playerInfo.xing;
+            let target = "ending_mindless";
+
+            if (answer === "狼" || answer === "猎人") {
+                target = "family";
+            } else if (answer === playerName) {
+                target = "yourself";
+            } else if (["系统", "阿比斯", "Abyss", "系统自己", "系统自身", "副本", "副本本身"].includes(answer)) {
+                target = "Abyss";
+            } else if (answer === "") {
+                target = "living";
+            } else if (answer === "小红帽") {
+                target = "Red";
+            } else if (answer === "外婆" || answer === "狼外婆") {
+                target = "grandma";
+            }
+
+            jumpToSceneByRiddle(target);
+        }
+
+        function jumpToSceneByRiddle(sceneId) {
+            numberGameState.ending = false;
+            finalQuestionState.active = false;
+            finalQuestionState.submitted = false;
+            finalQuestionState.mindless = false;
+            hideTopRightCountdown();
+            gameState.currentScene = sceneId;
+            gameState.lineIndex = 0;
+            isChoiceWaiting = false;
+            document.getElementById('choice-container').innerHTML = '';
+            renderDivider();
+            handleNext();
+        }
+
+        function autoScroll() {
+            const el = document.getElementById('game-scroll-area');
+            if (el) el.scrollTop = el.scrollHeight;
+        }
+
+        function saveGame(slotId) {
+            const data = {
+                currentScene: gameState.currentScene,
+                lineIndex: gameState.lineIndex,
+                historyHTML: document.getElementById('text-container').innerHTML,
+                time: new Date().toLocaleString(),
+                playerInfo: gameState.playerInfo,
+                items: gameState.items,
+                friendState: friendState
+            };
+            localStorage.setItem(`save_slot_${slotId}`, JSON.stringify(data));
+            openModal('save-modal');
+        }
+
+        function loadGame(slotId) {
+            const data = JSON.parse(localStorage.getItem(`save_slot_${slotId}`));
+            if (!data) return;
+            gameState.currentScene = data.currentScene;
+            gameState.lineIndex = data.lineIndex;
+
+            let loadedInfo = data.playerInfo || {};
+            if (loadedInfo.lastName && !loadedInfo.xing) loadedInfo.xing = loadedInfo.lastName;
+            if (loadedInfo.firstName && !loadedInfo.ming) loadedInfo.ming = loadedInfo.firstName;
+
+            if (!loadedInfo.xing) loadedInfo.xing = "无名氏";
+
+            gameState.playerInfo = loadedInfo;
+            gameState.items = data.items || [];
+            if (!gameState.items.includes("斧头")) {
+                flowerFaulseReloads++;
+                localStorage.setItem('flower_faulse_reloads', flowerFaulseReloads);
+            }
+            isCountingDown = false;
+            pendingCountdown = false;
+            isChoiceWaiting = false;
+            window._endingShown = false;
+            const existingCd = document.getElementById('countdown-overlay');
+            if (existingCd) existingCd.remove();
+            const choiceBox = document.getElementById('choice-container');
+            choiceBox.innerHTML = '';
+            choiceBox.style.display = 'none';
+
+            if (data.friendState) {
+                friendState.currentFriend = data.friendState.currentFriend || 1;
+                friendState.correctCount = data.friendState.correctCount || 0;
+                friendState.totalAttempts = data.friendState.totalAttempts || 0;
+                friendState.wrongChoices = data.friendState.wrongChoices || [];
+            }
+
+            document.getElementById('text-container').innerHTML = data.historyHTML + "<div style='color:red; font-size:0.7rem'>[ 进度已读取 ]</div>";
+
+            document.getElementById('home-page').classList.remove('active');
+            document.getElementById('name-input-screen').classList.remove('active');
+            document.getElementById('play-screen').classList.add('active');
+
+            closeModal('save-modal');
+            autoScroll();
+
+            const scene = storyData[gameState.currentScene];
+
+            if (scene && scene.isEnding && gameState.lineIndex >= scene.lines.length) {
+                window._endingShown = true;
+                const b = document.createElement('button');
+                b.className = 'btn';
+                b.style.marginTop = "20px";
+                b.innerText = "回到主页";
+                b.onclick = () => location.reload();
+                document.getElementById('text-container').appendChild(b);
+            }
+            showLoadMessage("赞美主神的仁慈吧，祂们赐予了你重来一次的机会");
+            startBGM();
+        }
+
+        function showLoadMessage(text, callback) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 9998;
+                background: rgba(0,0,0,0.6);
+                backdrop-filter: blur(30px);
+                -webkit-backdrop-filter: blur(30px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                opacity: 0;
+                transition: opacity 0.6s ease;
+                padding: 20px;
+            `;
+            document.body.appendChild(overlay);
+
+            const t = document.createElement('div');
+            t.innerText = text;
+            t.style.cssText = `
+                color: #c8c8c8;
+                font-family: var(--font-main);
+                font-size: 1.2rem;
+                letter-spacing: 3px;
+                text-align: center;
+                max-width: 600px;
+                line-height: 1.8;
+                opacity: 0;
+                transition: opacity 0.9s ease 0.3s;
+            `;
+            overlay.appendChild(t);
+
+            requestAnimationFrame(() => {
+                overlay.style.opacity = '1';
+                t.style.opacity = '1';
+            });
+
+            overlay.addEventListener('click', (e) => {
+                e.stopPropagation();
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.remove();
+                    if (callback) callback();
+                }, 600);
+            });
+        }
+
+        function recordEnding(id, name) {
+            if (window._endingShown) return;
+            window._endingShown = true;
+
+            const numId = Number(id);
+            if (!Number.isInteger(numId)) return;
+
+            if (!gameState.endingsFound.includes(numId)) {
+                gameState.endingsFound.push(numId);
+                gameState.endingsFound = [...new Set(gameState.endingsFound)].sort((a, b) => a - b);
+                localStorage.setItem('endings_found_v2', JSON.stringify(gameState.endingsFound));
+            }
+            renderLine(`\n【结局：${name}】`);
+            const b = document.createElement('button');
+            b.className = 'btn';
+            b.style.marginTop = "20px";
+            b.innerText = "回到主页";
+            b.onclick = (ev) => {
+                ev.stopPropagation();
+                ev.preventDefault();
+                goHomeHardReload();
+            };
+            document.getElementById('text-container').appendChild(b);
+        }
+
+        function goHomeHardReload() {
+            document.getElementById('text-container').innerHTML = '';
+            const cc = document.getElementById('choice-container');
+            cc.innerHTML = '';
+            cc.style.display = 'flex';
+
+            gameState.currentScene = "start1";
+            gameState.lineIndex = 0;
+            gameState.items = [];
+            friendState.currentFriend = 1;
+            friendState.correctCount = 0;
+            friendState.totalAttempts = 0;
+            friendState.wrongChoices = [];
+
+            finalQuestionState.active = false;
+            finalQuestionState.submitted = false;
+            finalQuestionState.mindless = false;
+
+            isTyping = false;
+            isChoiceWaiting = false;
+            isProcessing = false;
+            waitingForRiddle = false;
+            isCountingDown = false;
+            pendingCountdown = false;
+            riddleForced = false;
+            window._endingShown = false;
+
+            ['countdown-overlay', 'black-overlay'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.remove();
+            });
+            document.getElementById('violence-overlay')?.classList.remove('active');
+            document.getElementById('riddle-btn').classList.remove('visible');
+
+            document.getElementById('play-screen').classList.remove('active');
+            document.getElementById('name-input-screen').classList.remove('active');
+            document.getElementById('home-page').classList.add('active');
+        }
+
+        function goToNameInput() {
+            document.getElementById('home-page').classList.remove('active');
+            document.getElementById('name-input-screen').classList.add('active');
+        }
+
+        function backToHome() {
+            document.getElementById('name-input-screen').classList.remove('active');
+            document.getElementById('home-page').classList.add('active');
+        }
+
+        function confirmName() {
+            const xingInput = document.getElementById('input-xing').value.trim();
+
+            gameState.playerInfo.xing = xingInput || "无名氏";
+
+            newGame();
+        }
+
+        function newGame() {
+            document.getElementById('name-input-screen').classList.remove('active');
+            document.getElementById('play-screen').classList.add('active');
+            window._endingShown = false;
+            startBGM();
+            flowerState = { count: 0, axeAtStart: null };
+            flowerFaulseReloads = 0;
+            localStorage.removeItem('flower_faulse_reloads');
+
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: #000;
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color:#c04040;
+                text-shadow: 0 0 12px rgba(255, 0, 0, 0.8);
+                font-family: var(--font-main);
+                font-size: 1.3rem;
+                letter-spacing: 3px;
+                cursor: pointer;
+                opacity: 0;
+                transition: opacity 0.9s ease;
+                text-align: center;
+                padding: 20px;
+                user-select: none;
+            `;
+            overlay.innerText = "欢迎加入阿比斯，迷途的羔羊。";
+            document.body.appendChild(overlay);
+
+            requestAnimationFrame(() => overlay.style.opacity = '1');
+
+            overlay.addEventListener('click', (e) => {
+                e.stopPropagation();
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.remove();
+                    handleNext();
+                }, 900);
+            });
+        }
+
+        function goToHome() {
+            if (confirm("确定要返回主页吗？未保存的进度将丢失。")) {
+                goHomeHardReload();
+            }
+        }
+
+        function openModal(id) {
+            document.getElementById(id).style.display = 'block';
+            if (id === 'save-modal') renderSaveSlots();
+            if (id === 'ending-modal') renderEndingList();
+            if (id === 'jump-modal') renderJumpList();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function renderSaveSlots() {
+            const container = document.getElementById('save-slots');
+            container.innerHTML = '';
+            for (let i = 1; i <= 3; i++) {
+                const data = JSON.parse(localStorage.getItem(`save_slot_${i}`));
+                const div = document.createElement('div');
+                div.className = 'slot';
+                div.innerHTML = `
+            <span>位置 ${i} <br><small>${data ? data.time : '空存档'}</small></span>
+            <div>
+                <button class="btn" style="padding:5px" onclick="saveGame(${i})">存档</button>
+                ${data ? `<button class="btn" style="padding:5px" onclick="loadGame(${i})">读档</button>` : ''}
+            </div>
+        `;
+                container.appendChild(div);
+            }
+        }
+
+        function renderEndingList() {
+            const container = document.getElementById('ending-list');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= config.totalEndings; i++) {
+                const isFound = gameState.endingsFound.includes(Number(i));
+                const div = document.createElement('div');
+                div.className = 'slot';
+
+                let endingName = null;
+                for (const key in storyData) {
+                    const scene = storyData[key];
+                    if (scene.isEnding && scene.endingId === i && scene.endingName) {
+                        endingName = scene.endingName;
+                        break;
+                    }
+                }
+
+                if (isFound && endingName) {
+                    div.innerText = `Ending${i}：“${endingName}”`;
+                } else if (isFound) {
+                    div.innerText = `Ending ${i}: 已解锁`;
+                } else {
+                    div.innerText = `Ending ${i}: ？？？`;
+                }
+
+                container.appendChild(div);
+            }
+        }
+
+        function renderJumpList() {
+            const container = document.getElementById('jump-list');
+            container.innerHTML = '';
+
+            for (const [key, scene] of Object.entries(storyData)) {
+                if (scene.choices && scene.choices.length > 0) {
+                    const div = document.createElement('div');
+                    div.className = 'slot';
+                    div.style.flexDirection = 'column';
+                    div.style.alignItems = 'flex-start';
+                    div.style.gap = '10px';
+
+                    const optionsPreview = scene.choices.map(c => `[${c.text}]`).join(' ');
+
+                    div.innerHTML = `
+                <div style="width:100%; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:bold; color:var(--accent-color)">节点: ${key}</span>
+                    <button class="btn" style="padding:5px 10px; font-size:0.8rem;" onclick="jumpToScene('${key}')">跳转</button>
+                </div>
+                <div style="font-size:0.8rem; color:#666;">
+                    包含选项: ${replaceParams(optionsPreview)}
+                </div>
+            `;
+                    container.appendChild(div);
+                }
+            }
+
+            if (container.children.length === 0) {
+                container.innerHTML = '<div style="padding:20px; text-align:center;">暂无可用跳转节点</div>';
+            }
+        }
+
+        function jumpToScene(sceneId) {
+            if (confirm("跳转将覆盖当前进度，确定跳转吗？")) {
+                gameState.currentScene = sceneId;
+                const scene = storyData[sceneId];
+                gameState.lineIndex = scene.lines.length;
+
+                document.getElementById('text-container').innerHTML = "<div style='color:var(--accent-color); font-size:0.8rem; margin: 20px 0;'>[ 已跳转至节点 ]</div>";
+                closeModal('jump-modal');
+
+                renderChoices(scene.choices);
+                autoScroll();
+            }
+        }
+    </script>
+</body>
+
+</html>
